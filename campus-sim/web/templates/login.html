@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - BASim</title>
+    <script>
+        // Apply saved theme immediately to prevent flash
+        (function() {
+            const theme = localStorage.getItem('basim-theme') || 'ocean';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+    <style>
+        /* Theme definitions */
+        :root, [data-theme="matrix"] {
+            --primary: #39ff14;
+            --primary-dim: #32e010;
+            --bg: #0a0a0a;
+            --bg-dark: #000;
+            --card-bg: #0d0d0d;
+            --text: #e8f5e0;
+            --text-dim: #b8e0a8;
+            --text-muted: #7cb368;
+            --border: #1a3318;
+            --danger: #ff4444;
+            --glow: rgba(57, 255, 20, 0.2);
+            --shadow: rgba(57, 255, 20, 0.1);
+        }
+        
+        [data-theme="ocean"] {
+            --primary: #64b5f6;
+            --primary-dim: #42a5f5;
+            --bg: #0d1b2a;
+            --bg-dark: #060d14;
+            --card-bg: #112240;
+            --text: #e8eef4;
+            --text-dim: #b8c9d9;
+            --text-muted: #8899aa;
+            --border: #1e3a5f;
+            --danger: #e57373;
+            --glow: rgba(100, 181, 246, 0.2);
+            --shadow: rgba(100, 181, 246, 0.1);
+        }
+        
+        [data-theme="midnight"] {
+            --primary: #bb86fc;
+            --primary-dim: #9d6fdb;
+            --bg: #121212;
+            --bg-dark: #000;
+            --card-bg: #1e1e2e;
+            --text: #e1e1e6;
+            --text-dim: #a9a9b8;
+            --text-muted: #6e6e82;
+            --border: #2d2d44;
+            --danger: #cf6679;
+            --glow: rgba(187, 134, 252, 0.2);
+            --shadow: rgba(187, 134, 252, 0.1);
+        }
+        
+        [data-theme="light"] {
+            --primary: #1976d2;
+            --primary-dim: #1565c0;
+            --bg: #f5f5f5;
+            --bg-dark: #e0e0e0;
+            --card-bg: #ffffff;
+            --text: #212121;
+            --text-dim: #424242;
+            --text-muted: #757575;
+            --border: #e0e0e0;
+            --danger: #d32f2f;
+            --glow: rgba(25, 118, 210, 0.2);
+            --shadow: rgba(25, 118, 210, 0.1);
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            background: var(--bg-dark);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: var(--primary);
+        }
+        
+        .login-container {
+            background: var(--bg);
+            border: 1px solid var(--primary);
+            box-shadow: 0 0 30px var(--shadow);
+            width: 100%;
+            max-width: 360px;
+            padding: 30px;
+        }
+        
+        .login-header {
+            text-align: center;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .login-header h1 {
+            font-size: 1.7rem;
+            font-weight: normal;
+            letter-spacing: 3px;
+            margin-bottom: 8px;
+            color: var(--primary);
+        }
+        
+        .login-header h1 .sim {
+            font-style: italic;
+            letter-spacing: 1px;
+        }
+        
+        .login-header p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+        }
+        
+        .form-group {
+            margin-bottom: 18px;
+        }
+        
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+            color: var(--text);
+            font-size: 1.05rem;
+            font-family: inherit;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 10px var(--glow);
+        }
+        
+        .form-group input::placeholder {
+            color: var(--text-muted);
+        }
+        
+        .remember-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .remember-row input[type="checkbox"] {
+            width: 14px;
+            height: 14px;
+            accent-color: var(--primary);
+        }
+        
+        .remember-row label {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+        
+        .login-btn {
+            width: 100%;
+            padding: 10px;
+            background: transparent;
+            color: var(--primary);
+            border: 1px solid var(--primary);
+            font-size: 1.0rem;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .login-btn:hover {
+            background: var(--primary);
+            color: var(--bg);
+        }
+        
+        .flash-messages {
+            margin-bottom: 18px;
+        }
+        
+        .flash {
+            padding: 10px;
+            font-size: 0.95rem;
+            margin-bottom: 8px;
+            border: 1px solid;
+        }
+        
+        .flash.error {
+            border-color: var(--danger);
+            color: var(--danger);
+            background: rgba(255, 51, 51, 0.1);
+        }
+        
+        .flash.info {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: var(--glow);
+        }
+        
+        .demo-credentials {
+            margin-top: 25px;
+            padding-top: 18px;
+            border-top: 1px solid var(--border);
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+        
+        .demo-credentials h4 {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            color: var(--text-muted);
+        }
+        
+        .demo-credentials p {
+            margin-bottom: 4px;
+        }
+        
+        .demo-credentials code {
+            color: var(--text-dim);
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 400px) {
+            body { padding: 10px; }
+            .login-container { padding: 20px; }
+            .login-header h1 { font-size: 1.1rem; }
+            .login-header p { font-size: 0.85rem; }
+            .form-group input { padding: 8px 10px; font-size: 1.0rem; }
+            .login-btn { padding: 8px; font-size: 0.95rem; }
+        }
+        
+        /* Touch device optimizations */
+        @media (hover: none) and (pointer: coarse) {
+            .form-group input {
+                min-height: 44px;
+            }
+            .login-btn {
+                min-height: 44px;
+            }
+            .remember-row input[type="checkbox"] {
+                width: 20px;
+                height: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="wip-banner" style="background-color: rgba(255, 152, 0, 0.5); color: #000; text-align: center; padding: 5px; font-weight: bold; font-family: sans-serif; font-size: 14px; margin-bottom: 20px;">
+        ⚠️ WORK IN PROGRESS: This simulator is under active development.
+    </div>
+    <div class="login-container">
+        <div class="login-header">
+            <h1>BA<span class="sim">Sim</span></h1>
+            <p>Building Automation Simulator</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="flash {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" action="{{ url_for('login') }}">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required autofocus
+                       placeholder="Enter username">
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required
+                       placeholder="Enter password">
+            </div>
+
+            <div class="remember-row">
+                <input type="checkbox" id="remember" name="remember">
+                <label for="remember">Remember session</label>
+            </div>
+
+            <button type="submit" class="login-btn">Access System</button>
+        </form>
+
+        <div class="demo-credentials">
+            <h4>Demo Access</h4>
+            <p>Admin: <code>admin</code> / <code>admin123</code></p>
+            <p>Viewer: <code>viewer</code> / <code>viewer123</code></p>
+        </div>
+    </div>
+</body>
+</html>

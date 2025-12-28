@@ -1,0 +1,1653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - BASim</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script>
+        // Apply saved theme immediately to prevent flash
+        (function() {
+            const theme = localStorage.getItem('basim-theme') || 'ocean';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+    <style>
+        .admin-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        @media (max-width: 900px) {
+            .admin-container {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .config-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 20px;
+        }
+        
+        .config-card h2 {
+            font-size: 1.05rem;
+            font-weight: normal;
+            margin-bottom: 18px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .form-group {
+            margin-bottom: 18px;
+        }
+        
+        .form-group label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: normal;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--text);
+            font-size: 1.0rem;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+        
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 10px rgba(0, 255, 65, 0.2);
+        }
+        
+        .form-group select option {
+            background: var(--bg);
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: 1px solid var(--border);
+            background: transparent;
+            font-size: 1.0rem;
+            font-weight: normal;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            color: var(--text-dim);
+        }
+        
+        .btn-primary {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+        
+        .btn-primary:hover {
+            background: var(--primary);
+            color: #000;
+        }
+        
+        .btn-secondary {
+            background: var(--bg);
+            color: var(--text);
+            border: 2px solid var(--border);
+        }
+        
+        .btn-secondary:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+        
+        .btn-success {
+            border-color: var(--success);
+            color: var(--success);
+        }
+        
+        .btn-success:hover {
+            background: var(--success);
+            color: #000;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .seed-section {
+            background: #050505;
+            border-color: var(--warning);
+        }
+        
+        .seed-section h2 {
+            border-bottom-color: #332200;
+            color: var(--warning);
+        }
+        
+        .seed-section label {
+            color: #cc9900;
+        }
+        
+        .seed-section input {
+            background: var(--bg);
+            border-color: #332200;
+            color: var(--warning);
+        }
+        
+        .seed-section .btn-secondary {
+            border-color: var(--warning);
+            color: var(--warning);
+        }
+        
+        .seed-section .btn-secondary:hover {
+            background: var(--warning);
+            color: #000;
+        }
+        
+        .current-config {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            padding: 12px;
+            margin-top: 15px;
+            font-size: 0.95rem;
+        }
+        
+        .current-config h4 {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+        
+        .config-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .config-item:last-child {
+            border-bottom: none;
+        }
+        
+        .config-item .label {
+            color: var(--text-muted);
+        }
+        
+        .config-item .value {
+            font-weight: 500;
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border: 1px solid;
+            color: #000;
+            font-weight: normal;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+        
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        
+        .toast.success {
+            background: var(--success);
+            border-color: var(--success);
+        }
+        
+        .toast.error {
+            background: var(--danger);
+            border-color: var(--danger);
+        }
+        
+        .nav-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 1.05rem;
+            margin-bottom: 15px;
+        }
+        
+        .nav-back:hover {
+            color: var(--primary);
+        }
+        
+        .map-preview {
+            height: 150px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 10px;
+            font-size: 0.95rem;
+            color: var(--text-muted);
+        }
+        
+        .building-names-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 15px;
+        }
+        
+        .building-name-item {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        
+        .building-name-item label {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+        }
+        
+        .building-name-item input {
+            padding: 10px 12px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 1.1rem;
+        }
+        
+        .building-details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+        }
+        
+        .building-detail-card {
+            background: var(--bg);
+            border-radius: 8px;
+            padding: 15px;
+        }
+        
+        .building-detail-card h4 {
+            font-size: 1.1rem;
+            margin-bottom: 12px;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .building-detail-card .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            font-size: 1.0rem;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .building-detail-card .detail-row:last-child {
+            border-bottom: none;
+        }
+        
+        .building-detail-card .detail-label {
+            color: var(--text-muted);
+        }
+        
+        .building-detail-card .detail-value {
+            font-weight: 500;
+        }
+        
+        .ahu-list {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed var(--border);
+        }
+        
+        .ahu-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            font-size: 0.95rem;
+        }
+        
+        .ahu-type-badge {
+            font-size: 0.85rem;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+        
+        .ahu-type-badge.vav {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+        
+        .ahu-type-badge.oa {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+        
+        /* Admin Tabs */
+        .admin-tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        .admin-tabs button {
+            padding: 10px 20px;
+            border: none;
+            background: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 1.0rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1px;
+        }
+        .admin-tabs button:hover { color: var(--text); }
+        .admin-tabs button.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        /* Simulation Parameters */
+        .param-category {
+            margin-bottom: 20px;
+        }
+        .param-category h3 {
+            font-size: 0.95rem;
+            font-weight: normal;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin: 0 0 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+        .param-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 12px;
+        }
+        .param-item {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            padding: 10px 12px;
+        }
+        .param-item:hover {
+            border-color: var(--primary-dim);
+        }
+        .param-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        .param-name {
+            font-size: 0.9rem;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .param-unit {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+        .param-desc {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+        .param-input-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .param-input-row input[type="number"] {
+            flex: 1;
+            padding: 6px 8px;
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 1.0rem;
+        }
+        .param-input-row input[type="number"]:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        .param-input-row input[type="range"] {
+            flex: 2;
+            accent-color: var(--primary);
+        }
+        .param-reset {
+            padding: 4px 8px;
+            border: 1px solid var(--border);
+            background: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        .param-reset:hover {
+            border-color: var(--warning);
+            color: var(--warning);
+        }
+        .param-modified {
+            border-left: 3px solid var(--warning);
+        }
+        
+        /* Mobile Responsive Styles */
+        @media (max-width: 600px) {
+            .container { padding: 8px; }
+            
+            .nav-back { 
+                font-size: 0.95rem;
+                margin-bottom: 10px;
+            }
+            
+            header h1 { font-size: 1.15rem; }
+            
+            .admin-container { gap: 12px; }
+            
+            .config-card { padding: 12px; }
+            .config-card h2 { 
+                font-size: 0.95rem; 
+                margin-bottom: 12px;
+                padding-bottom: 8px;
+            }
+            
+            .form-group { margin-bottom: 12px; }
+            .form-group label { font-size: 0.85rem; margin-bottom: 4px; }
+            .form-group input, .form-group select { 
+                padding: 6px 8px; 
+                font-size: 0.95rem;
+            }
+            
+            .form-row { 
+                grid-template-columns: 1fr; 
+                gap: 10px;
+            }
+            
+            .btn { 
+                padding: 6px 12px; 
+                font-size: 0.9rem;
+            }
+            
+            .btn-group { 
+                flex-wrap: wrap; 
+                gap: 8px;
+                margin-top: 12px;
+            }
+            
+            .current-config { padding: 10px; margin-top: 10px; font-size: 0.9rem; }
+            .current-config h4 { font-size: 0.85rem; margin-bottom: 8px; }
+            .config-item { padding: 4px 0; font-size: 0.85rem; }
+            
+            .building-names-grid { grid-template-columns: 1fr; gap: 10px; }
+            .building-name-item input { padding: 8px 10px; font-size: 1.0rem; }
+            
+            .building-details-grid { grid-template-columns: 1fr; gap: 10px; }
+            .building-detail-card { padding: 10px; }
+            .bld-header h4 { font-size: 1.0rem; }
+            
+            .override-table { font-size: 0.85rem; }
+            .override-table th, .override-table td { padding: 6px 8px; }
+            
+            .params-header { 
+                flex-direction: column; 
+                gap: 8px;
+                align-items: stretch;
+            }
+            .params-header h3 { font-size: 0.95rem; }
+            
+            .params-grid { 
+                grid-template-columns: 1fr; 
+                gap: 10px;
+            }
+            
+            .param-card { padding: 10px; }
+            .param-name { font-size: 0.85rem; }
+            .param-unit { font-size: 0.8rem; }
+            .param-desc { font-size: 0.85rem; margin-bottom: 6px; }
+            .param-input-row { 
+                flex-direction: column; 
+                gap: 6px;
+                align-items: stretch;
+            }
+            .param-input-row input[type="number"] { font-size: 0.95rem; }
+            .param-reset { font-size: 0.8rem; width: 100%; text-align: center; }
+            
+            .toast { 
+                left: 10px; 
+                right: 10px; 
+                bottom: 10px; 
+                padding: 10px 15px;
+                font-size: 0.95rem;
+            }
+        }
+        
+        @media (max-width: 400px) {
+            .config-card { padding: 10px; }
+            .btn-group { flex-direction: column; }
+            .btn-group .btn { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="wip-banner" style="background-color: rgba(255, 152, 0, 0.5); color: #000; text-align: center; padding: 5px; font-weight: bold; font-family: sans-serif; font-size: 14px;">
+        ⚠️ WORK IN PROGRESS: This simulator is under active development.
+    </div>
+    <div class="container">
+        <header>
+            <div class="header-top">
+                <h1>BASim <span id="header-title" style="font-size: 0.5em; font-weight: normal; opacity: 0.7; margin-left: 15px;"></span></h1>
+                <div class="user-info">
+                    <a href="{{ url_for('readme_page') }}" class="admin-link" style="margin-right: 15px; text-decoration: none; color: var(--text-muted);">[DOC] Readme</a>
+                    <span class="user-badge {{ user.role }}">{{ user.role|upper }}</span>
+                    <span class="username">{{ user.username }}</span>
+                    <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+                </div>
+            </div>
+        </header>
+        
+        <a href="{{ url_for('index') }}" class="nav-back">[&lt;] Back to Dashboard</a>
+        
+        <div class="admin-tabs">
+            <button class="active" onclick="showTab('config')">Configuration</button>
+            <button onclick="showTab('simulation')">Simulation Parameters</button>
+        </div>
+        
+        <!-- Configuration Tab -->
+        <div id="tab-config" class="tab-content active">
+        <div class="admin-container">
+            <!-- Simulation Time -->
+            <div class="config-card">
+                <h2>SIMULATION TIME</h2>
+                <p style="margin-bottom: 20px; opacity: 0.9; font-size: 1.05rem;">
+                    Manually set the simulation date and time.
+                </p>
+                
+                <div class="form-group">
+                    <label for="sim_date_picker">Date & Time</label>
+                    <input type="datetime-local" id="sim_date_picker">
+                </div>
+                
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="setSimulationDate()">
+                        Set Date
+                    </button>
+                </div>
+            </div>
+
+            <!-- Random Generation -->
+            <div class="config-card seed-section">
+                <h2>RANDOM GENERATOR</h2>
+                <p style="margin-bottom: 20px; opacity: 0.9; font-size: 1.05rem;">
+                    Enter a seed to generate a random campus anywhere in the world. 
+                    Same seed = same campus every time!
+                </p>
+                
+                <div class="form-group">
+                    <label for="seed">Seed (any text)</label>
+                    <input type="text" id="seed" placeholder="e.g., christmas2025, mycampus, 12345">
+                </div>
+                
+                <div class="btn-group">
+                    <button class="btn btn-secondary" onclick="generateRandom()">
+                        [GEN] Generate Random Campus
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Global Settings -->
+            <div class="config-card">
+                <h2>GLOBAL SETTINGS</h2>
+                <div class="form-group">
+                    <label for="campus_name">Campus Name</label>
+                    <div class="form-row" style="grid-template-columns: 3fr 1fr; gap: 10px;">
+                        <input type="text" id="campus_name" placeholder="e.g. Main Campus">
+                        <button class="btn btn-primary" onclick="updateCampusName()">Save</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="unit_system">Unit System</label>
+                    <select id="unit_system" onchange="updateUnitSystem()">
+                        <option value="US">US Customary (Imperial)</option>
+                        <option value="Metric">Metric (SI)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Manual Configuration -->
+            <div class="config-card">
+                <h2>MANUAL CONFIGURATION</h2>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="campus_type">Campus Type</label>
+                        <select id="campus_type">
+                            <option value="University">University</option>
+                            <option value="Corporate">Corporate</option>
+                            <option value="Hospital">Hospital</option>
+                            <option value="Data Center">Data Center</option>
+                            <option value="Mixed Use">Mixed Use</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="num_buildings">Buildings (1-5)</label>
+                        <input type="number" id="num_buildings" min="1" max="5" value="1">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="num_ahus">AHUs per Building (1-20)</label>
+                        <input type="number" id="num_ahus" min="1" max="20" value="2">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="num_vavs">VAVs per AHU (1-50)</label>
+                        <input type="number" id="num_vavs" min="1" max="50" value="5">
+                    </div>
+                    <div class="form-group">
+                        <label for="simulation_speed">Simulation Speed (0.1-100x)</label>
+                        <input type="number" id="simulation_speed" min="0.1" max="100" step="0.1" value="1.0">
+                    </div>
+                </div>
+                
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="applyConfig()">
+                        Apply Changes
+                    </button>
+                </div>
+            </div>
+
+            <!-- Scenario Settings -->
+            <div class="config-card">
+                <h2>SCENARIO SETTINGS</h2>
+                <p style="margin-bottom: 20px; opacity: 0.9; font-size: 1.05rem;">
+                    Configure automated scenario changes.
+                </p>
+                
+                <div class="form-group">
+                    <label for="auto_frequency">Auto-Change Frequency (Seconds, 0 = Disabled)</label>
+                    <input type="number" id="auto_frequency" min="0" step="60" value="0">
+                </div>
+                
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="updateScenarioSettings()">
+                        Update Settings
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Location Configuration -->
+            <div class="config-card">
+                <h2>LOCATION</h2>
+                
+                <div class="form-group">
+                    <label for="location_select">Quick Select</label>
+                    <select id="location_select" onchange="selectLocation()">
+                        <option value="">-- Select a city --</option>
+                    </select>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="latitude">Latitude</label>
+                        <input type="number" id="latitude" step="0.01" min="-90" max="90">
+                    </div>
+                    <div class="form-group">
+                        <label for="longitude">Longitude</label>
+                        <input type="number" id="longitude" step="0.01" min="-180" max="180">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="location_name">Location Name</label>
+                    <input type="text" id="location_name" placeholder="City, Country">
+                </div>
+                
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="applyLocation()">
+                        Update Location
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Current Status -->
+            <div class="config-card">
+                <h2>CURRENT CONFIGURATION</h2>
+                
+                <div class="current-config" id="current-config">
+                    <p style="color: var(--text-muted);">Loading...</p>
+                </div>
+                
+                <div class="btn-group" style="margin-top: 15px;">
+                    <button class="btn btn-secondary" onclick="loadConfig()">
+                        [R] Refresh
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Save/Load Campus -->
+            <div class="config-card">
+                <h2>SAVE / LOAD CAMPUS</h2>
+                <p style="margin-bottom: 15px; color: var(--text-muted); font-size: 1.05rem;">
+                    Export the current campus configuration to a file, or import a previously saved configuration.
+                </p>
+                
+                <div class="btn-group" style="flex-direction: column; gap: 10px;">
+                    <button class="btn btn-success" onclick="exportCampus()" style="width: 100%;">
+                        [SAVE] Export Campus to File
+                    </button>
+                    
+                    <div style="position: relative; width: 100%;">
+                        <input type="file" id="import-file" accept=".json" style="display: none;" onchange="handleImportFile(event)">
+                        <button class="btn btn-primary" onclick="document.getElementById('import-file').click()" style="width: 100%;">
+                            [LOAD] Import Campus from File
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="import-status" style="margin-top: 10px; display: none;" class="current-config">
+                    <p style="color: var(--text-muted);">Ready to import...</p>
+                </div>
+            </div>
+            
+            <!-- Building Names -->
+            <div class="config-card" style="grid-column: 1 / -1;">
+                <h2>BUILDING NAMES</h2>
+                <p style="margin-bottom: 15px; color: var(--text-muted); font-size: 1.05rem;">
+                    Customize the display names for each building. Changes apply immediately.
+                </p>
+                
+                <div id="building-names-container">
+                    <p style="color: var(--text-muted);">Loading buildings...</p>
+                </div>
+                
+                <div class="btn-group" style="margin-top: 15px;">
+                    <button class="btn btn-primary" onclick="saveBuildingNames()">
+                        [SAVE] Save Building Names
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Building Details -->
+            <div class="config-card" style="grid-column: 1 / -1;">
+                <h2>BUILDING DETAILS</h2>
+                <div id="building-details" class="building-details-grid">
+                    <p style="color: var(--text-muted);">Loading...</p>
+                </div>
+            </div>
+        </div>
+        </div><!-- end tab-config -->
+        
+        <!-- Simulation Parameters Tab -->
+        <div id="tab-simulation" class="tab-content">
+            <div class="config-card" style="margin-bottom: 20px;">
+                <h2>SIMULATION PHYSICS PARAMETERS</h2>
+                <p style="color: var(--text-muted); font-size: 1.0rem; margin-bottom: 15px;">
+                    Adjust these parameters to customize how the building simulation behaves. 
+                    Changes take effect immediately. Modified parameters are highlighted.
+                </p>
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="saveSimParams()">
+                        [SAVE] Apply All Changes
+                    </button>
+                    <button class="btn btn-secondary" onclick="resetAllSimParams()">
+                        [RESET] Reset All to Defaults
+                    </button>
+                </div>
+            </div>
+            
+            <div id="sim-params-container">
+                <p style="color: var(--text-muted); padding: 20px;">Loading simulation parameters...</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="toast" id="toast"></div>
+    
+    <script>
+        const API_BASE = '';
+        let locations = [];
+        let currentConfig = null;
+        let simParams = null;
+        let simParamsModified = {};
+        
+        // Tab switching
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.admin-tabs button').forEach(b => b.classList.remove('active'));
+            document.getElementById('tab-' + tabName).classList.add('active');
+            event.target.classList.add('active');
+            
+            if (tabName === 'simulation' && !simParams) {
+                loadSimParams();
+            }
+        }
+        
+        // Load on page ready
+        document.addEventListener('DOMContentLoaded', () => {
+            loadUnitSystem();
+            loadCampusName();
+            loadConfig();
+            loadLocations();
+            updateHeaderStatus();
+            setInterval(updateHeaderStatus, 5000);
+        });
+
+        async function loadCampusName() {
+            try {
+                const response = await apiRequest('/api/admin/campus');
+                if (response && response.ok) {
+                    const data = await response.json();
+                    document.getElementById('campus_name').value = data.campus_name;
+                }
+            } catch (error) {
+                console.error('Failed to load campus name:', error);
+            }
+        }
+
+        async function updateCampusName() {
+            const campus_name = document.getElementById('campus_name').value;
+            try {
+                const response = await apiRequest('/api/admin/campus', {
+                    method: 'POST',
+                    body: JSON.stringify({ campus_name })
+                });
+                
+                if (response && response.ok) {
+                    showToast('Campus name updated!', 'success');
+                    updateHeaderStatus(); // Refresh header immediately
+                } else {
+                    showToast('Failed to update campus name', 'error');
+                }
+            } catch (error) {
+                showToast('Error updating campus name: ' + error.message, 'error');
+            }
+        }
+
+        async function loadUnitSystem() {
+            try {
+                const response = await apiRequest('/api/admin/units');
+                if (response && response.ok) {
+                    const data = await response.json();
+                    document.getElementById('unit_system').value = data.unit_system;
+                }
+            } catch (error) {
+                console.error('Failed to load unit system:', error);
+            }
+        }
+
+        async function updateUnitSystem() {
+            const unit_system = document.getElementById('unit_system').value;
+            try {
+                const response = await apiRequest('/api/admin/units', {
+                    method: 'POST',
+                    body: JSON.stringify({ unit_system })
+                });
+                
+                if (response && response.ok) {
+                    showToast('Unit system updated!', 'success');
+                } else {
+                    showToast('Failed to update unit system', 'error');
+                }
+            } catch (error) {
+                showToast('Error updating unit system: ' + error.message, 'error');
+            }
+        }
+        
+        async function updateHeaderStatus() {
+            try {
+                const response = await apiRequest('/api/status');
+                if (response && response.ok) {
+                    const data = await response.json();
+                    const titleEl = document.getElementById('header-title');
+                    if (titleEl && data.campus_name) {
+                        titleEl.textContent = `- [${data.campus_name}]`;
+                        document.title = `Admin - BASim - ${data.campus_name}`;
+                    }
+                }
+            } catch (e) {
+                console.error("Status update failed", e);
+            }
+        }
+        
+        // API request helper
+        async function apiRequest(url, options = {}) {
+            const response = await fetch(url, {
+                ...options,
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...options.headers
+                }
+            });
+            
+            if (response.status === 401) {
+                window.location.href = '/login';
+                return null;
+            }
+            
+            return response;
+        }
+        
+        // Load current configuration
+        async function loadConfig() {
+            try {
+                const response = await apiRequest(`${API_BASE}/api/admin/config`);
+                if (!response) return;
+                
+                currentConfig = await response.json();
+                
+                // Update form fields
+                document.getElementById('num_buildings').value = currentConfig.num_buildings;
+                document.getElementById('num_ahus').value = currentConfig.num_ahus;
+                document.getElementById('num_vavs').value = currentConfig.num_vavs;
+                document.getElementById('simulation_speed').value = currentConfig.simulation_speed;
+                document.getElementById('latitude').value = currentConfig.latitude;
+                document.getElementById('longitude').value = currentConfig.longitude;
+                document.getElementById('location_name').value = currentConfig.location_name;
+                document.getElementById('seed').value = currentConfig.seed || '';
+                if (currentConfig.campus_type) {
+                    document.getElementById('campus_type').value = currentConfig.campus_type;
+                }
+                if (currentConfig.auto_scenario_frequency !== undefined) {
+                    document.getElementById('auto_frequency').value = currentConfig.auto_scenario_frequency;
+                }
+                
+                // Calculate totals from actual buildings
+                let totalVavs = 0;
+                let totalOaAhus = 0;
+                if (currentConfig.buildings) {
+                    currentConfig.buildings.forEach(b => {
+                        totalVavs += b.vav_count;
+                        totalOaAhus += b.oa_ahu_count;
+                    });
+                }
+                
+                // Update status display
+                document.getElementById('current-config').innerHTML = `
+                    <h4>Active Settings</h4>
+                    <div class="config-item">
+                        <span class="label">Location</span>
+                        <span class="value">${currentConfig.location_name}</span>
+                    </div>
+                    <div class="config-item">
+                        <span class="label">Coordinates</span>
+                        <span class="value">${currentConfig.latitude.toFixed(2)}, ${currentConfig.longitude.toFixed(2)}</span>
+                    </div>
+                    <div class="config-item">
+                        <span class="label">Buildings</span>
+                        <span class="value">${currentConfig.num_buildings}</span>
+                    </div>
+                    <div class="config-item">
+                        <span class="label">Total VAVs</span>
+                        <span class="value">${totalVavs}</span>
+                    </div>
+                    <div class="config-item">
+                        <span class="label">100% OA AHUs</span>
+                        <span class="value">${totalOaAhus}</span>
+                    </div>
+                    <div class="config-item">
+                        <span class="label">Simulation Speed</span>
+                        <span class="value">${currentConfig.simulation_speed}x</span>
+                    </div>
+                    <div class="config-item">
+                        <span class="label">Seed</span>
+                        <span class="value">${currentConfig.seed || '(none)'}</span>
+                    </div>
+                `;
+                
+                // Update building names section
+                renderBuildingNames();
+                
+                // Update building details
+                renderBuildingDetails();
+                
+                // Update active scenario
+                const activeScenarioEl = document.getElementById('active-scenario');
+                if (activeScenarioEl && currentConfig.active_scenario) {
+                    activeScenarioEl.textContent = currentConfig.active_scenario;
+                    if (currentConfig.active_scenario !== 'Normal') {
+                        activeScenarioEl.style.color = 'var(--danger)';
+                    } else {
+                        activeScenarioEl.style.color = 'var(--primary)';
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Failed to load config:', error);
+            }
+        }
+        
+        // Trigger scenario
+        // Trigger scenario
+        async function triggerScenario(name) {
+            try {
+                const response = await apiRequest(`${API_BASE}/api/admin/scenario`, {
+                    method: 'POST',
+                    body: JSON.stringify({ scenario: name, duration: 300 })
+                });
+                
+                if (response && response.ok) {
+                    const data = await response.json();
+                    showToast(data.message, 'success');
+                    loadConfig(); // Refresh to update active scenario display
+                } else {
+                    const data = await response.json();
+                    showToast(data.error || 'Failed to trigger scenario', 'error');
+                }
+            } catch (err) {
+                showToast('Failed to trigger scenario: ' + err.message, 'error');
+            }
+        }
+
+        // Update scenario settings
+        async function updateScenarioSettings() {
+            const freq = document.getElementById('auto_frequency').value;
+            try {
+                const response = await apiRequest(`${API_BASE}/api/admin/scenario`, {
+                    method: 'POST',
+                    body: JSON.stringify({ auto_frequency: freq })
+                });
+                
+                if (response && response.ok) {
+                    const data = await response.json();
+                    showToast(data.message, 'success');
+                    loadConfig();
+                } else {
+                    const data = await response.json();
+                    showToast(data.error || 'Failed to update settings', 'error');
+                }
+            } catch (err) {
+                showToast('Failed to update settings: ' + err.message, 'error');
+            }
+        }
+
+        // Set simulation date
+        async function setSimulationDate() {
+            const dateVal = document.getElementById('sim_date_picker').value;
+            if (!dateVal) {
+                showToast('Please select a date and time', 'error');
+                return;
+            }
+            
+            try {
+                const response = await apiRequest(`${API_BASE}/api/admin/date`, {
+                    method: 'POST',
+                    body: JSON.stringify({ date: dateVal })
+                });
+                
+                if (response && response.ok) {
+                    const data = await response.json();
+                    showToast(data.message, 'success');
+                    updateHeaderStatus(); // Refresh header immediately
+                } else {
+                    const data = await response.json();
+                    showToast(data.error || 'Failed to set date', 'error');
+                }
+            } catch (err) {
+                showToast('Failed to set date: ' + err.message, 'error');
+            }
+        }
+        
+        // Show toast notification
+        
+        // Render building names form
+        function renderBuildingNames() {
+            if (!currentConfig || !currentConfig.buildings) return;
+            
+            const container = document.getElementById('building-names-container');
+            container.innerHTML = `<div class="building-names-grid">
+                ${currentConfig.buildings.map((b, i) => `
+                    <div class="building-name-item">
+                        <label>Building ${b.id} (${b.name})</label>
+                        <input type="text" 
+                               id="building-name-${b.id}" 
+                               value="${b.display_name}" 
+                               placeholder="Enter building name">
+                    </div>
+                `).join('')}
+            </div>`;
+        }
+        
+        // Render building details
+        function renderBuildingDetails() {
+            if (!currentConfig || !currentConfig.buildings) return;
+            
+            const container = document.getElementById('building-details');
+            container.innerHTML = currentConfig.buildings.map(b => `
+                <div class="building-detail-card">
+                    <h4>${b.display_name}</h4>
+                    <div class="detail-row">
+                        <span class="detail-label">Floors</span>
+                        <span class="detail-value">${b.floor_count}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Square Footage</span>
+                        <span class="detail-value">${b.square_footage.toLocaleString()} sq ft</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Total AHUs</span>
+                        <span class="detail-value">${b.ahu_count}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">100% OA AHUs</span>
+                        <span class="detail-value">${b.oa_ahu_count}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Total VAVs</span>
+                        <span class="detail-value">${b.vav_count}</span>
+                    </div>
+                    <div class="ahu-list">
+                        <strong style="font-size: 0.95rem; color: var(--text-muted);">AHU Breakdown:</strong>
+                        ${b.ahus.map(ahu => `
+                            <div class="ahu-item">
+                                <span>${ahu.name}</span>
+                                <span>
+                                    <span class="ahu-type-badge ${ahu.type === '100%OA' ? 'oa' : 'vav'}">
+                                        ${ahu.type === '100%OA' ? '100% OA' : `${ahu.vav_count} VAVs`}
+                                    </span>
+                                </span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // Save building names
+        async function saveBuildingNames() {
+            if (!currentConfig || !currentConfig.buildings) return;
+            
+            const buildingNames = currentConfig.buildings.map(b => {
+                const input = document.getElementById(`building-name-${b.id}`);
+                return input ? input.value : b.display_name;
+            });
+            
+            try {
+                const response = await apiRequest(`${API_BASE}/api/admin/config`, {
+                    method: 'POST',
+                    body: JSON.stringify({ building_names: buildingNames })
+                });
+                
+                if (response && response.ok) {
+                    showToast('Building names saved!', 'success');
+                    loadConfig();
+                } else {
+                    showToast('Failed to save building names', 'error');
+                }
+            } catch (error) {
+                showToast('Error: ' + error.message, 'error');
+            }
+        }
+        
+        // Load available locations
+        async function loadLocations() {
+            try {
+                const response = await apiRequest(`${API_BASE}/api/admin/locations`);
+                if (!response) return;
+                
+                locations = await response.json();
+                
+                const select = document.getElementById('location_select');
+                locations.forEach(loc => {
+                    const option = document.createElement('option');
+                    option.value = JSON.stringify(loc);
+                    option.textContent = loc.name;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Failed to load locations:', error);
+            }
+        }
+        
+        // Select location from dropdown
+        function selectLocation() {
+            const select = document.getElementById('location_select');
+            if (!select.value) return;
+            
+            const loc = JSON.parse(select.value);
+            document.getElementById('latitude').value = loc.lat;
+            document.getElementById('longitude').value = loc.lon;
+            document.getElementById('location_name').value = loc.name;
+        }
+        
+        // Apply manual configuration
+        async function applyConfig() {
+            const config = {
+                num_buildings: parseInt(document.getElementById('num_buildings').value),
+                num_ahus: parseInt(document.getElementById('num_ahus').value),
+                num_vavs: parseInt(document.getElementById('num_vavs').value),
+                simulation_speed: parseFloat(document.getElementById('simulation_speed').value),
+                latitude: parseFloat(document.getElementById('latitude').value),
+                longitude: parseFloat(document.getElementById('longitude').value),
+                location_name: document.getElementById('location_name').value,
+                seed: document.getElementById('seed').value || null,
+                campus_type: document.getElementById('campus_type').value
+            };
+            
+            try {
+                const response = await apiRequest(`${API_BASE}/api/admin/config`, {
+                    method: 'POST',
+                    body: JSON.stringify(config)
+                });
+                
+                if (response && response.ok) {
+                    showToast('Configuration updated!', 'success');
+                    loadConfig();
+                } else {
+                    showToast('Failed to update configuration', 'error');
+                }
+            } catch (error) {
+                showToast('Error: ' + error.message, 'error');
+            }
+        }
+        
+        // Apply location changes
+        async function applyLocation() {
+            const config = {
+                latitude: parseFloat(document.getElementById('latitude').value),
+                longitude: parseFloat(document.getElementById('longitude').value),
+                location_name: document.getElementById('location_name').value
+            };
+            
+            try {
+                const response = await apiRequest(`${API_BASE}/api/admin/config`, {
+                    method: 'POST',
+                    body: JSON.stringify(config)
+                });
+                
+                if (response && response.ok) {
+                    showToast('Location updated!', 'success');
+                    loadConfig();
+                } else {
+                    showToast('Failed to update location', 'error');
+                }
+            } catch (error) {
+                showToast('Error: ' + error.message, 'error');
+            }
+        }
+        
+        // Generate random campus
+        async function generateRandom() {
+            const seed = document.getElementById('seed').value.trim();
+            
+            try {
+                const response = await apiRequest(`${API_BASE}/api/admin/generate`, {
+                    method: 'POST',
+                    body: JSON.stringify({ seed: seed })
+                });
+                
+                if (response && response.ok) {
+                    const data = await response.json();
+                    showToast(`Random campus generated in ${data.config.location_name}!`, 'success');
+                    loadConfig();
+                } else {
+                    showToast('Failed to generate random campus', 'error');
+                }
+            } catch (error) {
+                showToast('Error: ' + error.message, 'error');
+            }
+        }
+        
+        // Show toast notification
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type} show`;
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+        
+        // Export campus to file
+        async function exportCampus() {
+            try {
+                const response = await apiRequest(`${API_BASE}/api/admin/export`);
+                if (!response) return;
+                
+                // Get the JSON data
+                const data = await response.json();
+                
+                // Create blob and download
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `basim-campus-${new Date().toISOString().slice(0,10)}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                showToast('Campus exported successfully!', 'success');
+            } catch (error) {
+                showToast('Export failed: ' + error.message, 'error');
+            }
+        }
+        
+        // Handle import file selection
+        function handleImportFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const statusDiv = document.getElementById('import-status');
+            statusDiv.style.display = 'block';
+            
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    // Show preview
+                    statusDiv.innerHTML = `
+                        <h4>Import Preview</h4>
+                        <div class="config-item">
+                            <span class="label">Version</span>
+                            <span class="value">${data.version || '1.0'}</span>
+                        </div>
+                        <div class="config-item">
+                            <span class="label">Exported</span>
+                            <span class="value">${data.exported_at ? new Date(data.exported_at).toLocaleString() : 'Unknown'}</span>
+                        </div>
+                        <div class="config-item">
+                            <span class="label">Location</span>
+                            <span class="value">${data.config?.location_name || 'Unknown'}</span>
+                        </div>
+                        <div class="config-item">
+                            <span class="label">Buildings</span>
+                            <span class="value">${data.config?.num_buildings || 0}</span>
+                        </div>
+                        <div class="config-item">
+                            <span class="label">Overrides</span>
+                            <span class="value">${Object.keys(data.overrides || {}).length}</span>
+                        </div>
+                        <div class="btn-group" style="margin-top: 10px;">
+                            <button class="btn btn-success" onclick="confirmImport()">Confirm Import</button>
+                            <button class="btn btn-secondary" onclick="cancelImport()">Cancel</button>
+                        </div>
+                    `;
+                    
+                    // Store data for import
+                    window.pendingImport = data;
+                    
+                } catch (err) {
+                    statusDiv.innerHTML = `<p style="color: var(--error);">Invalid file format: ${err.message}</p>`;
+                }
+            };
+            reader.readAsText(file);
+        }
+        
+        // Confirm import
+        async function confirmImport() {
+            if (!window.pendingImport) return;
+            
+            try {
+                const response = await apiRequest(`${API_BASE}/api/admin/import`, {
+                    method: 'POST',
+                    body: JSON.stringify(window.pendingImport)
+                });
+                
+                if (response && response.ok) {
+                    const result = await response.json();
+                    showToast(`Campus imported! ${result.overrides_restored || 0} overrides restored.`, 'success');
+                    loadConfig();
+                    cancelImport();
+                } else {
+                    const err = await response.json();
+                    showToast('Import failed: ' + (err.error || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                showToast('Import failed: ' + error.message, 'error');
+            }
+        }
+        
+        // Cancel import
+        function cancelImport() {
+            window.pendingImport = null;
+            document.getElementById('import-status').style.display = 'none';
+            document.getElementById('import-file').value = '';
+        }
+        
+        // Tab navigation
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all buttons
+            document.querySelectorAll('.admin-tabs button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById('tab-' + tabName).classList.add('active');
+            
+            // Activate button
+            event.target.classList.add('active');
+            
+            // Load simulation params if switching to that tab
+            if (tabName === 'simulation') {
+                loadSimulationParams();
+            }
+        }
+        
+        // Load simulation parameters
+        async function loadSimulationParams() {
+            try {
+                const response = await fetch('/api/admin/simulation-params');
+                const data = await response.json();
+                renderSimulationParams(data.parameters || data);
+            } catch (error) {
+                showToast('Failed to load simulation parameters: ' + error.message, 'error');
+            }
+        }
+        
+        // Render simulation parameters by category
+        function renderSimulationParams(data) {
+            const container = document.getElementById('sim-params-container');
+            
+            // Group parameters by category
+            const categories = {
+                thermal: { name: 'Thermal Model', params: [] },
+                control: { name: 'Control Loops', params: [] },
+                plant: { name: 'Central Plant', params: [] },
+                weather: { name: 'Weather & Environment', params: [] },
+                schedule: { name: 'Schedules', params: [] },
+                electrical: { name: 'Electrical & Grid', params: [] },
+                faults: { name: 'Fault Simulation', params: [] },
+                other: { name: 'Other Parameters', params: [] }
+            };
+            
+            // Sort parameters into categories
+            for (const [key, param] of Object.entries(data)) {
+                const category = param.category || 'other';
+                if (categories[category]) {
+                    categories[category].params.push({ key, ...param });
+                } else {
+                    categories.other.params.push({ key, ...param });
+                }
+            }
+            
+            // Build HTML
+            let html = '';
+            
+            for (const [catKey, cat] of Object.entries(categories)) {
+                if (cat.params.length === 0) continue;
+                
+                html += `<div class="param-category">`;
+                html += `<h3>${cat.name}</h3>`;
+                html += `<div class="param-grid">`;
+                
+                for (const param of cat.params) {
+                    const step = param.max - param.min > 10 ? 
+                        (param.max - param.min > 100 ? 1 : 0.1) : 0.01;
+                    
+                    html += `
+                        <div class="param-item" id="param-${param.key}">
+                            <div class="param-header">
+                                <span class="param-name">${param.key.replace(/_/g, ' ').toUpperCase()}</span>
+                                <span class="param-unit">${param.unit}</span>
+                            </div>
+                            <div class="param-desc">${param.description}</div>
+                            <div class="param-input-row">
+                                <input type="number" 
+                                    id="num-${param.key}"
+                                    min="${param.min}" 
+                                    max="${param.max}" 
+                                    step="${step}"
+                                    value="${param.value}"
+                                    data-default="${param.default}"
+                                    onchange="syncSlider('${param.key}', this.value)">
+                                <input type="range" 
+                                    id="slider-${param.key}"
+                                    min="${param.min}" 
+                                    max="${param.max}" 
+                                    step="${step}"
+                                    value="${param.value}"
+                                    oninput="syncNumber('${param.key}', this.value)">
+                                <button class="param-reset" onclick="resetParam('${param.key}')" title="Reset to default">
+                                    ↺
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                html += `</div></div>`;
+            }
+            
+            container.innerHTML = html;
+        }
+        
+        // Sync slider to number input
+        function syncNumber(key, value) {
+            const numInput = document.getElementById('num-' + key);
+            numInput.value = value;
+            markModified(key);
+        }
+        
+        // Sync number input to slider
+        function syncSlider(key, value) {
+            const slider = document.getElementById('slider-' + key);
+            slider.value = value;
+            markModified(key);
+        }
+        
+        // Mark parameter as modified
+        function markModified(key) {
+            const item = document.getElementById('param-' + key);
+            const numInput = document.getElementById('num-' + key);
+            const defaultVal = parseFloat(numInput.dataset.default);
+            const currentVal = parseFloat(numInput.value);
+            
+            if (Math.abs(currentVal - defaultVal) > 0.0001) {
+                item.classList.add('param-modified');
+            } else {
+                item.classList.remove('param-modified');
+            }
+        }
+        
+        // Reset single parameter
+        function resetParam(key) {
+            const numInput = document.getElementById('num-' + key);
+            const slider = document.getElementById('slider-' + key);
+            const defaultVal = numInput.dataset.default;
+            
+            numInput.value = defaultVal;
+            slider.value = defaultVal;
+            
+            document.getElementById('param-' + key).classList.remove('param-modified');
+        }
+        
+        // Save simulation parameters (called saveSimParams in button)
+        async function saveSimParams() {
+            const params = {};
+            document.querySelectorAll('#sim-params-container input[type="number"]').forEach(input => {
+                const key = input.id.replace('num-', '');
+                params[key] = parseFloat(input.value);
+            });
+            
+            try {
+                const response = await fetch('/api/admin/simulation-params', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(params)
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    showToast(`Saved ${result.updated_count || 0} simulation parameters`, 'success');
+                    // Remove modified markers
+                    document.querySelectorAll('.param-modified').forEach(el => {
+                        el.classList.remove('param-modified');
+                    });
+                } else {
+                    const err = await response.json();
+                    showToast('Save failed: ' + (err.error || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                showToast('Save failed: ' + error.message, 'error');
+            }
+        }
+        
+        // Reset all parameters to defaults
+        async function resetAllSimParams() {
+            if (!confirm('Reset all simulation parameters to their default values?')) return;
+            
+            try {
+                const response = await fetch('/api/admin/simulation-params/reset', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+                
+                if (response.ok) {
+                    loadSimulationParams();
+                    showToast('All parameters reset to defaults', 'success');
+                } else {
+                    showToast('Reset failed', 'error');
+                }
+            } catch (error) {
+                showToast('Reset failed: ' + error.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

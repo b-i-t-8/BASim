@@ -1,0 +1,28 @@
+# Caddyfile for Campus Simulator
+# Provides automatic HTTPS with Let's Encrypt
+# Falls back to internal CA if rate limited
+
+sim.hill.coffee {
+    # Try ACME first, fallback to internal self-signed if rate limited
+    tls {
+        issuer acme
+        issuer internal {
+            lifetime 24h
+        }
+    }
+    
+    # BACnet/SC WebSocket endpoint - proxy to internal hub
+    @bacnetsc {
+        path /bacnet-sc
+        header Connection *upgrade*
+        header Upgrade websocket
+    }
+    reverse_proxy @bacnetsc https://127.0.0.1:8443 {
+        transport http {
+            tls_insecure_skip_verify
+        }
+    }
+
+    # Main web application
+    reverse_proxy http://127.0.0.1:8080
+}

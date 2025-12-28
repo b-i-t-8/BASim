@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BASim - Documentation</title>
+    <script>
+        // Apply saved theme immediately to prevent flash
+        (function() {
+            const theme = localStorage.getItem('basim-theme') || 'ocean';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .docs-container {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 2rem;
+            margin-top: 1rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .docs-section {
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 2rem;
+        }
+        .docs-section:last-child {
+            border-bottom: none;
+        }
+        .docs-title {
+            color: var(--accent-color);
+            margin-bottom: 1rem;
+        }
+        .code-block {
+            background: var(--bg-color);
+            padding: 1rem;
+            border-radius: 4px;
+            font-family: monospace;
+            margin: 1rem 0;
+            border: 1px solid var(--border-color);
+        }
+        .step-list {
+            list-style-type: decimal;
+            margin-left: 1.5rem;
+        }
+        .step-list li {
+            margin-bottom: 0.5rem;
+        }
+        ul.step-list {
+            list-style-type: disc;
+        }
+    </style>
+</head>
+<body>
+    <div class="wip-banner" style="background-color: rgba(255, 152, 0, 0.5); color: #000; text-align: center; padding: 5px; font-weight: bold; font-family: sans-serif; font-size: 14px;">
+        ⚠️ WORK IN PROGRESS: This simulator is under active development.
+    </div>
+    <div class="container">
+        <header>
+            <div class="header-top">
+                <h1>BA<span class="sim">Sim</span> Docs</h1>
+                <div class="user-info">
+                    <a href="{{ url_for('index') }}" class="admin-link">[DASH] Dashboard</a>
+                    <div class="theme-switcher" id="theme-switcher">
+                        <button class="theme-btn" onclick="toggleThemeMenu()">
+                            <span id="current-theme-icon">◐</span> Theme
+                        </button>
+                        <div class="theme-dropdown">
+                            <button class="theme-option" data-theme="matrix" onclick="setTheme('matrix')">
+                                <span class="theme-swatch matrix"></span> Matrix
+                            </button>
+                            <button class="theme-option" data-theme="ocean" onclick="setTheme('ocean')">
+                                <span class="theme-swatch ocean"></span> Ocean
+                            </button>
+                            <button class="theme-option" data-theme="midnight" onclick="setTheme('midnight')">
+                                <span class="theme-swatch midnight"></span> Midnight
+                            </button>
+                            <button class="theme-option" data-theme="light" onclick="setTheme('light')">
+                                <span class="theme-swatch light"></span> Light
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="docs-container">
+            <div class="docs-section">
+                <h2 class="docs-title">Connecting with Yabe (Yet Another BACnet Explorer)</h2>
+                <p>You can connect to the Campus Simulator using Yabe to explore BACnet objects, read values, and write overrides.</p>
+                
+                <h3>Prerequisites</h3>
+                <ul class="step-list">
+                    <li>Download and install <a href="https://sourceforge.net/projects/yabe/" target="_blank" style="color: var(--accent-color);">Yabe</a> on your Windows machine.</li>
+                    <li>Ensure you have network access to the simulator host.</li>
+                </ul>
+
+                <h3>Connection Steps</h3>
+                <ol class="step-list">
+                    <li>Open Yabe.</li>
+                    <li>Click the <strong>Add device</strong> button (green plus icon).</li>
+                    <li>In the "Add device" dialog:
+                        <ul>
+                            <li><strong>Port:</strong> 47808 (Default)</li>
+                            <li><strong>Local IP:</strong> Select your network interface that can reach the simulator.</li>
+                        </ul>
+                    </li>
+                    <li>Click <strong>Start</strong>.</li>
+                    <li>Yabe will send a Who-Is broadcast. The simulator should respond as:
+                        <div class="code-block">
+                            Device ID: 9999<br>
+                            Name: CampusGateway<br>
+                            Vendor: 15
+                        </div>
+                    </li>
+                    <li>Click on the device to see the list of objects (Analog Values, Binary Values, etc.).</li>
+                </ol>
+
+                <h3>Troubleshooting</h3>
+                <p>If you cannot discover the device:</p>
+                <ul class="step-list">
+                    <li>Ensure UDP port <strong>47808</strong> is open on the firewall.</li>
+                    <li>If running in Docker, ensure the port is mapped correctly (it is by default).</li>
+                    <li>Try adding the simulator IP explicitly if broadcast is blocked (Yabe -> Add device -> Remote BBMD -> Enter Simulator IP:47808).</li>
+                </ul>
+            </div>
+
+            <div class="docs-section">
+                <h2 class="docs-title">Connecting with BACnet/SC (Secure Connect)</h2>
+                <p>The simulator provides a BACnet/SC Hub endpoint accessible via WebSocket (WSS).</p>
+                
+                <div class="alert" style="background: rgba(0, 255, 65, 0.1); border-left: 4px solid var(--primary); padding: 15px; margin-bottom: 20px;">
+                    <strong>Update:</strong> The simulator now supports standard binary BACnet/SC connections! You can use Yabe or other standard clients.
+                </div>
+
+                <h3>Connection Details</h3>
+                <div class="code-block">
+                    Hub URL: wss://sim.hill.coffee/bacnet-sc<br>
+                    Port: 443 (HTTPS/WSS)<br>
+                    Authentication: None (Open Hub)
+                </div>
+
+                <h3>Yabe Configuration</h3>
+                <ol class="step-list">
+                    <li>Open Yabe.</li>
+                    <li>Click <strong>Add device</strong>.</li>
+                    <li>Select <strong>BACnet/SC</strong> tab.</li>
+                    <li>Enter the Hub URL: <code>wss://sim.hill.coffee/bacnet-sc</code></li>
+                    <li>Connect.</li>
+                </ol>
+            </div>
+
+            <div class="docs-section">
+                <h2 class="docs-title">Modbus TCP</h2>
+                <p>The simulator exposes a Modbus TCP server for integration with industrial control systems.</p>
+                
+                <h3>Connection Details</h3>
+                <div class="code-block">
+                    Host: sim.hill.coffee (or IP)<br>
+                    Port: 5020<br>
+                    Unit ID: 1 (Gateway)
+                </div>
+
+                <h3>Register Mapping</h3>
+                <p>Points are mapped to Holding Registers (4xxxx) and Input Registers (3xxxx).</p>
+                <ul class="step-list">
+                    <li><strong>Campus OAT:</strong> Register 0 (Input)</li>
+                    <li><strong>Electrical Main kW:</strong> Register 100 (Input)</li>
+                    <li><strong>Building Points:</strong> Dynamically assigned starting at 1000.</li>
+                </ul>
+                <p><em>Note: Values are typically scaled by 100 (e.g., 72.5°F = 7250).</em></p>
+            </div>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+bacpypes
+pymodbus==3.6.9
+numpy
+netifaces
+flask
+flask-cors
+flask-login
+werkzeug
+cryptography
+websockets

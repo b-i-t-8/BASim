@@ -1,0 +1,54 @@
+{
+  "name": "BASim Campus Simulator",
+  "image": "mcr.microsoft.com/devcontainers/python:3.11",
+  
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+  
+  "forwardPorts": [80, 443, 8080, 5020, 47808, 8443],
+  "portsAttributes": {
+    "80": {
+      "label": "HTTP (Docker)",
+      "onAutoForward": "silent"
+    },
+    "443": {
+      "label": "HTTPS (Docker)",
+      "onAutoForward": "notify"
+    },
+    "8080": {
+      "label": "Web UI (Python direct)",
+      "onAutoForward": "notify"
+    },
+    "5020": {
+      "label": "Modbus TCP",
+      "onAutoForward": "silent"
+    },
+    "47808": {
+      "label": "BACnet/IP (UDP)",
+      "onAutoForward": "silent"
+    },
+    "8443": {
+      "label": "BACnet/SC",
+      "onAutoForward": "silent"
+    }
+  },
+  
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-azuretools.vscode-docker"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python"
+      }
+    }
+  },
+  
+  "postCreateCommand": "pip install -r requirements.txt",
+  "postStartCommand": "echo '\n✅ BASim ready!\n\nOption 1 (quick): python main.py → open port 8080\nOption 2 (full):  docker compose up -d --build → open port 443\n'",
+  
+  "remoteUser": "vscode"
+}

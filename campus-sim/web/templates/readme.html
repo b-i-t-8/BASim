@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation - BASim</title>
+    <script>
+        // Apply saved theme immediately to prevent flash
+        (function() {
+            const theme = localStorage.getItem('basim-theme') || 'ocean';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        .markdown-body {
+            color: var(--text);
+            line-height: 1.6;
+        }
+        .markdown-body h1, .markdown-body h2, .markdown-body h3 {
+            color: var(--primary);
+            margin-top: 1.5em;
+            margin-bottom: 0.5em;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.3em;
+        }
+        .markdown-body h1 { font-size: 2em; }
+        .markdown-body h2 { font-size: 1.5em; }
+        .markdown-body h3 { font-size: 1.25em; }
+        .markdown-body a { color: var(--primary-dim); }
+        .markdown-body code {
+            background: var(--bg);
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        .markdown-body pre {
+            background: var(--bg);
+            padding: 1em;
+            overflow-x: auto;
+            border-radius: 5px;
+            border: 1px solid var(--border);
+        }
+        .markdown-body pre code {
+            background: transparent;
+            padding: 0;
+        }
+        .markdown-body ul, .markdown-body ol {
+            padding-left: 2em;
+            margin-bottom: 1em;
+        }
+        .markdown-body blockquote {
+            border-left: 4px solid var(--border);
+            padding-left: 1em;
+            color: var(--text-muted);
+            margin: 1em 0;
+        }
+        .markdown-body table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1em 0;
+        }
+        .markdown-body th, .markdown-body td {
+            border: 1px solid var(--border);
+            padding: 8px;
+            text-align: left;
+        }
+        .markdown-body th {
+            background: var(--bg-light);
+        }
+    </style>
+</head>
+<body>
+    <div class="wip-banner" style="background-color: rgba(255, 152, 0, 0.5); color: #000; text-align: center; padding: 5px; font-weight: bold; font-family: sans-serif; font-size: 14px;">
+        ⚠️ WORK IN PROGRESS: This simulator is under active development.
+    </div>
+    <div class="container">
+        <header>
+            <div class="header-top">
+                <h1>BA<span class="sim">Sim</span></h1>
+                <button class="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Toggle Menu">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+                <div class="user-info" id="user-menu">
+                    <a href="{{ url_for('index') }}" class="admin-link" title="Dashboard">[HOME] Dashboard</a>
+                    <a href="{{ url_for('topology_page') }}" class="admin-link" title="Network Topology">[NET] Topology</a>
+                    <a href="{{ url_for('protocols_page') }}" class="admin-link" title="Protocol Integration">[INT] Protocols</a>
+                    {% if user.role == 'admin' %}
+                    <a href="{{ url_for('admin_page') }}" class="admin-link">[CFG] Admin</a>
+                    {% endif %}
+                    <div class="theme-switcher" id="theme-switcher">
+                        <button class="theme-btn" onclick="toggleThemeMenu()">
+                            <span id="current-theme-icon">◐</span> Theme
+                        </button>
+                        <div class="theme-dropdown">
+                            <button class="theme-option" data-theme="matrix" onclick="setTheme('matrix')">
+                                <span class="theme-swatch matrix"></span> Matrix
+                            </button>
+                            <button class="theme-option" data-theme="ocean" onclick="setTheme('ocean')">
+                                <span class="theme-swatch ocean"></span> Ocean
+                            </button>
+                            <button class="theme-option" data-theme="midnight" onclick="setTheme('midnight')">
+                                <span class="theme-swatch midnight"></span> Midnight
+                            </button>
+                            <button class="theme-option" data-theme="light" onclick="setTheme('light')">
+                                <span class="theme-swatch light"></span> Light
+                            </button>
+                        </div>
+                    </div>
+                    <span class="user-badge {{ user.role }}">{{ user.role|upper }}</span>
+                    <span class="username">{{ user.username }}</span>
+                    <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <div class="view-header">
+                <h2>Documentation</h2>
+            </div>
+
+            <div class="section">
+                <div class="config-card" style="background: var(--card-bg); border: 1px solid var(--border); padding: 20px; overflow-x: auto;">
+                    <div id="markdown-content" class="markdown-body"></div>
+                    <pre id="raw-content" style="display: none;">{{ content }}</pre>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const rawContent = document.getElementById('raw-content').textContent;
+            const markdownContent = document.getElementById('markdown-content');
+            markdownContent.innerHTML = marked.parse(rawContent);
+        });
+    </script>
+</body>
+</html>

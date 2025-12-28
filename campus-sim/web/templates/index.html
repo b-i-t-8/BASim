@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BASim</title>
+    <script>
+        // Apply saved theme immediately to prevent flash
+        (function() {
+            const theme = localStorage.getItem('basim-theme') || 'ocean';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="wip-banner" style="background-color: rgba(255, 152, 0, 0.5); color: #000; text-align: center; padding: 5px; font-weight: bold; font-family: sans-serif; font-size: 14px;">
+        ⚠️ WORK IN PROGRESS: This simulator is under active development.
+    </div>
+    <div class="container">
+        <header>
+            <div class="header-top">
+                <h1>BA<span class="sim">Sim</span></h1>
+                <button class="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Toggle Menu">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+                <div class="user-info" id="user-menu">
+                    <a href="{{ url_for('readme_page') }}" class="admin-link" title="Documentation">[DOC] Readme</a>
+                    <a href="{{ url_for('topology_page') }}" class="admin-link" title="Network Topology">[NET] Topology</a>
+                    <a href="{{ url_for('protocols_page') }}" class="admin-link" title="Protocol Integration">[INT] Protocols</a>
+                    {% if user.role == 'admin' %}
+                    <button class="override-btn" onclick="showAllOverrides()" title="View active overrides">
+                        [!] Overrides <span id="override-count" style="display: none;">0</span>
+                    </button>
+                    <a href="{{ url_for('admin_page') }}" class="admin-link">[CFG] Admin</a>
+                    {% endif %}
+                    <div class="theme-switcher" id="theme-switcher">
+                        <button class="theme-btn" onclick="toggleThemeMenu()">
+                            <span id="current-theme-icon">◐</span> Theme
+                        </button>
+                        <div class="theme-dropdown">
+                            <button class="theme-option" data-theme="matrix" onclick="setTheme('matrix')">
+                                <span class="theme-swatch matrix"></span> Matrix
+                            </button>
+                            <button class="theme-option" data-theme="ocean" onclick="setTheme('ocean')">
+                                <span class="theme-swatch ocean"></span> Ocean
+                            </button>
+                            <button class="theme-option" data-theme="midnight" onclick="setTheme('midnight')">
+                                <span class="theme-swatch midnight"></span> Midnight
+                            </button>
+                            <button class="theme-option" data-theme="light" onclick="setTheme('light')">
+                                <span class="theme-swatch light"></span> Light
+                            </button>
+                        </div>
+                    </div>
+                    <span class="user-badge {{ user.role }}">{{ user.role|upper }}</span>
+                    <span class="username">{{ user.username }}</span>
+                    <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+                </div>
+            </div>
+            <div class="status-bar">
+                <div class="status-item">
+                    <span class="label">Date</span>
+                    <span class="value" id="sim-date">--</span>
+                </div>
+                <div class="status-item">
+                    <span class="label">Season</span>
+                    <span class="value" id="sim-season">--</span>
+                </div>
+                <div class="status-item">
+                    <span class="label">Outside Air Temp</span>
+                    <span class="value" id="oat">--</span>
+                    <span class="unit temp-unit">°F</span>
+                </div>
+                <div class="status-item">
+                    <span class="label">Humidity</span>
+                    <span class="value" id="humidity">--</span>
+                    <span class="unit">%</span>
+                </div>
+                <div class="status-item">
+                    <span class="label">Wet Bulb</span>
+                    <span class="value" id="wet-bulb">--</span>
+                    <span class="unit temp-unit">°F</span>
+                </div>
+                <div class="status-item">
+                    <span class="label">Dew Point</span>
+                    <span class="value" id="dew-point">--</span>
+                    <span class="unit temp-unit">°F</span>
+                </div>
+                <div class="status-item">
+                    <span class="label">Enthalpy</span>
+                    <span class="value" id="enthalpy">--</span>
+                    <span class="unit enthalpy-unit">BTU/lb</span>
+                </div>
+                <div class="status-item">
+                    <span class="label">Simulation Speed</span>
+                    <span class="value" id="sim-speed">--</span>
+                    <span class="unit">x</span>
+                </div>
+                <div class="status-item">
+                    <span class="label">Buildings</span>
+                    <span class="value" id="num-buildings">--</span>
+                </div>
+                <div class="status-item">
+                    <span class="label">Total VAVs</span>
+                    <span class="value" id="total-vavs">--</span>
+                </div>
+                <div class="status-item plant-status">
+                    <span class="label">Plant kW</span>
+                    <span class="value" id="plant-kw">--</span>
+                </div>
+                <div class="status-item plant-status">
+                    <span class="label">Cooling Load</span>
+                    <span class="value" id="cooling-load">--</span>
+                    <span class="unit">tons</span>
+                </div>
+            </div>
+            
+            <div class="scenario-bar">
+                <span class="scenario-label">SCENARIO:</span>
+                <div class="scenario-controls">
+                    <button class="scenario-btn" data-scenario="Normal" onclick="triggerScenario('Normal')" title="Standard weather conditions">
+                        <span class="icon">☀️</span> Normal
+                    </button>
+                    <button class="scenario-btn" data-scenario="Snow" onclick="triggerScenario('Snow')" title="Freezing temperatures (20-30F)">
+                        <span class="icon">❄️</span> Snow
+                    </button>
+                    <button class="scenario-btn" data-scenario="Rainstorm" onclick="triggerScenario('Rainstorm')" title="Cooling effect, increased humidity">
+                        <span class="icon">🌧️</span> Rain
+                    </button>
+                    <button class="scenario-btn" data-scenario="Windstorm" onclick="triggerScenario('Windstorm')" title="Erratic temperature, power flickers">
+                        <span class="icon">💨</span> Wind
+                    </button>
+                    <button class="scenario-btn" data-scenario="Thunderstorm" onclick="triggerScenario('Thunderstorm')" title="Power outage risk">
+                        <span class="icon">⚡</span> Thunder
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <nav class="building-nav" id="building-nav">
+                <!-- Building tabs populated by JS -->
+            </nav>
+
+            <section class="building-content" id="building-content">
+                <p class="loading">Loading...</p>
+            </section>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

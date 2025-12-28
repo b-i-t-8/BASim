@@ -1,0 +1,28 @@
+# Docker Compose for Campus Simulator with Caddy SSL
+version: '3.8'
+
+services:
+  campus-sim:
+    build: .
+    ports:
+      - "80:80"       # HTTP (redirects to HTTPS)
+      - "443:443"     # HTTPS (Caddy)
+      - "5020:5020"   # Modbus TCP
+      - "47808:47808/udp"  # BACnet/IP
+      - "8443:8443"   # BACnet/SC (WSS) - internal, proxied via Caddy
+    environment:
+      - CAMPUS_SIZE=${CAMPUS_SIZE:-Small}
+      - GEO_LAT=${GEO_LAT:-36.16}
+      - SIMULATION_SPEED=${SIMULATION_SPEED:-1.0}
+    volumes:
+      # Mount source code for development
+      - .:/app
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      # Persist Caddy data (certificates)
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:

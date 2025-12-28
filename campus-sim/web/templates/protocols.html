@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Protocol Integration - BASim</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script>
+        // Apply saved theme immediately to prevent flash
+        (function() {
+            const theme = localStorage.getItem('basim-theme') || 'ocean';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+    <style>
+        .page-wrap {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 15px;
+        }
+        .back { color: var(--text-muted); text-decoration: none; font-size: 18px; }
+        .back:hover { color: var(--primary); }
+        h1 { font-size: 20px; font-weight: normal; margin: 12px 0 5px; letter-spacing: 2px; text-transform: uppercase; color: var(--primary); }
+        .subtitle { color: var(--text-muted); font-size: 17px; margin-bottom: 18px; }
+        
+        .conn-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+        @media (max-width: 800px) { .conn-grid { grid-template-columns: 1fr; } }
+        
+        .conn-box {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 12px 14px;
+        }
+        .conn-box h2 {
+            font-size: 17px;
+            font-weight: normal;
+            color: var(--primary);
+            margin: 0 0 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .conn-box h2 .status {
+            float: right;
+            font-size: 14px;
+            padding: 2px 6px;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+        }
+        .conn-row {
+            display: flex;
+            font-size: 17px;
+            padding: 3px 0;
+        }
+        .conn-row .lbl {
+            width: 80px;
+            color: var(--text-muted);
+            flex-shrink: 0;
+            margin-right: 15px;
+        }
+        .conn-row .val {
+            color: var(--text-dim);
+            word-break: break-all;
+        }
+        .code-sample {
+            background: var(--bg);
+            color: var(--text-dim);
+            font-size: 15px;
+            padding: 10px;
+            margin-top: 10px;
+            overflow-x: auto;
+            white-space: pre;
+            border: 1px solid var(--border);
+        }
+        .code-sample .c { color: var(--text-muted); }
+        .code-sample .s { color: var(--primary); }
+        .code-sample .k { color: var(--text-dim); }
+        
+        .endpoints-list {
+            margin-top: 8px;
+        }
+        .ep-row {
+            font-size: 15px;
+            padding: 2px 0;
+            display: flex;
+            gap: 8px;
+            align-items: baseline;
+        }
+        .ep-method {
+            font-size: 14px;
+            padding: 1px 4px;
+            min-width: 30px;
+            text-align: center;
+            border: 1px solid;
+        }
+        .ep-method.get { border-color: var(--primary); color: var(--primary); }
+        .ep-method.post { border-color: #ffcc00; color: #ffcc00; }
+        .ep-path { color: var(--text-dim); }
+        .ep-desc { color: var(--text-muted); }
+        
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            margin-top: 10px;
+            font-size: 15px;
+            font-family: inherit;
+            background: var(--bg);
+            color: var(--primary);
+            border: 1px solid var(--primary);
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        .download-btn:hover {
+            background: var(--primary);
+            color: var(--bg);
+        }
+        .download-btn svg {
+            width: 12px;
+            height: 12px;
+            fill: currentColor;
+        }
+        .sc-features {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+        }
+        .sc-feature {
+            font-size: 14px;
+            padding: 2px 6px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+        }
+        
+        .points-wrap {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+        }
+        .points-header {
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .points-header h2 {
+            font-size: 17px;
+            font-weight: normal;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .points-header .count {
+            color: var(--text-muted);
+        }
+        .filter-row {
+            display: flex;
+            gap: 8px;
+        }
+        .filter-row input, .filter-row select {
+            font-size: 17px;
+            padding: 5px 8px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--primary);
+            font-family: inherit;
+        }
+        .filter-row input { width: 160px; }
+        .filter-row input::placeholder { color: var(--text-muted); }
+        .filter-row select { color: var(--text-dim); }
+        .filter-row select option { background: var(--bg-light); }
+        
+        .proto-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-light);
+        }
+        .proto-tabs button {
+            border: none;
+            background: none;
+            padding: 8px 14px;
+            font-size: 17px;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1px;
+            font-family: inherit;
+        }
+        .proto-tabs button:hover { color: var(--text-dim); }
+        .proto-tabs button.on {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+        
+        .pts-table-wrap {
+            max-height: 380px;
+            overflow: auto;
+        }
+        .pts-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 17px;
+        }
+        .pts-table th {
+            background: var(--bg-light);
+            font-weight: normal;
+            text-align: left;
+            padding: 8px 10px;
+            position: sticky;
+            top: 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 15px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .pts-table td {
+            padding: 6px 10px;
+            border-bottom: 1px solid var(--bg-light);
+            vertical-align: top;
+        }
+        .pts-table tr:hover { background: rgba(0, 255, 65, 0.03); }
+        .pts-table code {
+            font-size: 15px;
+            color: var(--text-dim);
+        }
+        .pts-table .pt-name { color: var(--primary); }
+        .pts-table .pt-desc { color: var(--text-muted); font-size: 15px; }
+        .rw-tag {
+            font-size: 12px;
+            padding: 1px 4px;
+            border: 1px solid #ffcc00;
+            color: #ffcc00;
+        }
+        .ro-tag {
+            font-size: 12px;
+            padding: 1px 4px;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+        }
+        .loading { padding: 40px; text-align: center; color: var(--text-muted); font-size: 18px; }
+        
+        /* Modbus Network Styles */
+        .modbus-section {
+            margin-bottom: 18px;
+        }
+        .modbus-section h2 {
+            font-size: 18px;
+            font-weight: normal;
+            color: var(--primary);
+            margin: 0 0 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        /* BACnet Network Tree Styles */
+        .bacnet-section {
+            margin-bottom: 18px;
+        }
+        .bacnet-section h2 {
+            font-size: 18px;
+            font-weight: normal;
+            color: var(--primary);
+            margin: 0 0 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .net-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 10px;
+        }
+        .net-box {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 12px;
+        }
+        .net-box h3 {
+            font-size: 17px;
+            font-weight: normal;
+            color: var(--text-dim);
+            margin: 0 0 8px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid var(--border);
+        }
+        .net-box h3 .net-num {
+            color: var(--primary);
+            font-size: 15px;
+            margin-left: 6px;
+            padding: 1px 5px;
+            border: 1px solid var(--primary);
+        }
+        .net-box h3 .net-type {
+            float: right;
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+        .net-info {
+            font-size: 15px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+        .device-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .device-item {
+            padding: 6px 8px;
+            margin-bottom: 4px;
+            background: var(--bg);
+            border-left: 2px solid var(--border);
+            font-size: 15px;
+            cursor: pointer;
+        }
+        .device-item:hover {
+            border-left-color: var(--primary);
+            background: var(--bg-light);
+        }
+        .device-item.expanded {
+            border-left-color: var(--primary);
+        }
+        .device-item .dev-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .device-item .dev-id {
+            color: var(--primary);
+            font-weight: bold;
+        }
+        .device-item .dev-name {
+            color: var(--text-dim);
+            margin-left: 8px;
+        }
+        .device-item .dev-type {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+        .device-item .dev-addr {
+            color: var(--text-muted);
+            font-size: 14px;
+            margin-top: 3px;
+        }
+        .device-objects {
+            display: none;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid var(--border);
+        }
+        .device-item.expanded .device-objects {
+            display: block;
+        }
+        .obj-row {
+            display: flex;
+            font-size: 14px;
+            padding: 2px 0;
+            color: var(--text-dim);
+        }
+        .obj-row .obj-ref {
+            width: 60px;
+            color: var(--primary);
+        }
+        .obj-row .obj-name {
+            flex: 1;
+        }
+        
+        .topology-stats {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 15px;
+            padding: 10px 14px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+        }
+        .topo-stat {
+            text-align: center;
+        }
+        .topo-stat .val {
+            font-size: 26px;
+            color: var(--primary);
+        }
+        .topo-stat .lbl {
+            font-size: 14px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+        
+        /* Mobile Responsive Styles */
+        @media (max-width: 600px) {
+            .page-wrap { padding: 10px; }
+            h1 { font-size: 18px; margin: 8px 0 3px; }
+            .subtitle { font-size: 15px; margin-bottom: 12px; }
+            .back { font-size: 17px; }
+            
+            .conn-grid { gap: 8px; }
+            .conn-box { padding: 10px 12px; }
+            .conn-box h2 { font-size: 15px; margin-bottom: 8px; }
+            .conn-box h2 .status { font-size: 12px; padding: 1px 4px; }
+            .conn-row { font-size: 15px; flex-wrap: wrap; }
+            .conn-row .lbl { width: 70px; }
+            .code-sample { font-size: 14px; padding: 8px; }
+            
+            .endpoints-list { overflow-x: auto; }
+            .ep-row { font-size: 14px; gap: 5px; }
+            .ep-method { font-size: 12px; min-width: 26px; }
+            
+            .topology-stats { 
+                gap: 10px; 
+                padding: 8px 10px; 
+                flex-wrap: wrap; 
+                justify-content: center;
+            }
+            .topo-stat .val { font-size: 20px; }
+            .topo-stat .lbl { font-size: 12px; }
+            
+            .net-grid { grid-template-columns: 1fr; gap: 8px; }
+            .net-box { padding: 10px; }
+            .net-box h3 { font-size: 15px; }
+            .net-box h3 .net-num { font-size: 14px; }
+            .net-box h3 .net-type { font-size: 12px; }
+            .net-info { font-size: 14px; }
+            .device-list { max-height: 180px; }
+            .device-item { padding: 5px 6px; font-size: 14px; }
+            .device-item .dev-id { font-size: 14px; }
+            .device-item .dev-type { font-size: 12px; }
+            .device-item .dev-addr { font-size: 12px; }
+            .obj-row { font-size: 12px; }
+            .obj-row .obj-ref { width: 55px; }
+            
+            .points-header { padding: 8px 10px; gap: 8px; }
+            .points-header h2 { font-size: 15px; }
+            .filter-row { flex-wrap: wrap; }
+            .filter-row input, .filter-row select { 
+                font-size: 15px; 
+                padding: 4px 6px; 
+            }
+            .filter-row input { width: 140px; }
+            
+            .proto-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            .proto-tabs button { 
+                padding: 6px 10px; 
+                font-size: 15px; 
+                white-space: nowrap;
+                flex-shrink: 0;
+            }
+            
+            .pts-table-wrap { max-height: 300px; }
+            .pts-table { font-size: 15px; }
+            .pts-table th { font-size: 14px; padding: 6px 8px; }
+            .pts-table td { padding: 5px 8px; }
+            .pts-table code { font-size: 14px; }
+            .pts-table .pt-desc { font-size: 14px; }
+            .rw-tag, .ro-tag { font-size: 11px; padding: 1px 3px; }
+        }
+        
+        @media (max-width: 400px) {
+            .page-wrap { padding: 6px; }
+            .conn-row .lbl { width: 60px; }
+            .filter-row input { width: 100%; }
+            .filter-row { width: 100%; }
+            .points-header { flex-direction: column; align-items: stretch; }
+        }
+    </style>
+</head>
+<body>
+    <div class="wip-banner" style="background-color: rgba(255, 152, 0, 0.5); color: #000; text-align: center; padding: 5px; font-weight: bold; font-family: sans-serif; font-size: 14px;">
+        ⚠️ WORK IN PROGRESS: This simulator is under active development.
+    </div>
+    <div class="page-wrap">
+        <a href="{{ url_for('index') }}" class="back">[&lt;] Dashboard</a>
+        <h1>Integration Guide</h1>
+        <p class="subtitle">Protocol connection information for external system integration</p>
+        
+        <div id="main">
+            <div class="loading">Loading...</div>
+        </div>
+    </div>
+    
+    <script>
+        let protocolData = null;
+        
+        async function init() {
+            try {
+                const r = await fetch('/api/protocols');
+                if (!r.ok) throw new Error('Load failed');
+                protocolData = await r.json();
+                render();
+            } catch (e) {
+                document.getElementById('main').innerHTML = '<p style="color:var(--danger);padding:20px;">Error loading data</p>';
+            }
+        }
+        
+        function toggleDevice(el) {
+            el.classList.toggle('expanded');
+        }
+        
+        function renderModbusNetwork(net) {
+            const devices = protocolData.modbus.devices.filter(d => 
+                d.network_number === net.network_number || 
+                (d.network_type === 'Modbus TCP' && !d.network_number)
+            );
+            
+            let netInfo = '';
+            if (net.network_type === 'Modbus RTU (RS-485)') {
+                netInfo = `${net.serial_port} | ${net.baud_rate} baud, ${net.parity}, ${net.data_bits}${net.stop_bits}`;
+            }
+            
+            return `
+                <div class="net-box">
+                    <h3>
+                        ${net.description}
+                        <span class="net-num">NET ${net.network_number}</span>
+                        <span class="net-type">${net.network_type}</span>
+                    </h3>
+                    <div class="net-info">${netInfo}</div>
+                    <div class="device-list">
+                        ${devices.map(d => `
+                            <div class="device-item" onclick="toggleDevice(this)">
+                                <div class="dev-header">
+                                    <span>
+                                        <span class="dev-id">UID ${d.unit_id}</span>
+                                        <span class="dev-name">${d.device_name}</span>
+                                    </span>
+                                    <span class="dev-type">${d.device_type}</span>
+                                </div>
+                                <div class="dev-addr">
+                                    ${d.model || ''} | ${d.baud_rate ? `${d.baud_rate} baud` : `${d.ip_address}:${d.port}`}
+                                </div>
+                                <div class="device-objects">
+                                    ${(d.registers || []).map(r => `
+                                        <div class="obj-row">
+                                            <span class="obj-ref">${r.type}:${r.address}</span>
+                                            <span class="obj-name">${r.name}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+        
+        function renderBACnetNetwork(net) {
+            const devices = protocolData.bacnet.devices.filter(d => 
+                d.network_number === net.network_number || 
+                (d.mstp_network === net.network_number)
+            );
+            
+            let netInfo = '';
+            if (net.network_type === 'BACnet/IP') {
+                netInfo = `BBMD: ${net.bbmd}`;
+            } else if (net.network_type === 'BACnet MS/TP') {
+                netInfo = `${net.baud_rate} baud, Router MAC: ${net.router_mac}`;
+            } else if (net.network_type === 'BACnet/SC') {
+                netInfo = `Hub: ${net.hub_uri}`;
+            }
+            
+            return `
+                <div class="net-box">
+                    <h3>
+                        ${net.description}
+                        <span class="net-num">NET ${net.network_number}</span>
+                        <span class="net-type">${net.network_type}</span>
+                    </h3>
+                    <div class="net-info">${netInfo}</div>
+                    <div class="device-list">
+                        ${devices.map(d => `
+                            <div class="device-item" onclick="toggleDevice(this)">
+                                <div class="dev-header">
+                                    <span>
+                                        <span class="dev-id">${d.device_id}</span>
+                                        <span class="dev-name">${d.device_name}</span>
+                                    </span>
+                                    <span class="dev-type">${d.device_type}</span>
+                                </div>
+                                <div class="dev-addr">
+                                    ${d.network_type === 'BACnet MS/TP' ? `MAC: ${d.mstp_mac}` : 
+                                      d.network_type === 'BACnet/SC' ? `UUID: ${d.uuid || 'N/A'}` :
+                                      d.mac_address || ''}
+                                    ${d.model ? ` | ${d.model}` : ''}
+                                </div>
+                                <div class="device-objects">
+                                    ${(d.objects || []).map(o => `
+                                        <div class="obj-row">
+                                            <span class="obj-ref">${o.type}:${o.instance}</span>
+                                            <span class="obj-name">${o.name}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+        
+        function render() {
+            const d = protocolData;
+            const topo = d.bacnet.network_topology || {};
+            
+            // Helper to find MS/TP networks
+            const mstpNets = (d.bacnet.networks || []).filter(n => n.network_type === 'BACnet MS/TP');
+            // Helper to find RTU networks
+            const rtuNets = (d.modbus.networks || []).filter(n => n.network_type === 'Modbus RTU (RS-485)');
+            
+            document.getElementById('main').innerHTML = `
+                <div class="conn-grid" style="grid-template-columns: 1fr;">
+                    <!-- 1. REST API -->
+                    <div class="conn-box">
+                        <h2>REST API <span class="status">Online</span></h2>
+                        <div class="conn-row"><span class="lbl">Base URL</span><span class="val">${d.rest_api.base_url}</span></div>
+                        <div class="conn-row"><span class="lbl">Auth</span><span class="val">Session cookie</span></div>
+                        <div class="endpoints-list" style="display: flex; flex-wrap: wrap; gap: 5px 20px;">
+                            ${d.rest_api.endpoints.map(e => `<div class="ep-row">
+                                <span class="ep-method ${e.method.toLowerCase()}">${e.method}</span>
+                                <span class="ep-path">${e.path}</span>
+                            </div>`).join('')}
+                        </div>
+                    </div>
+                    
+                    <!-- 2. BACnet/SC -->
+                    <div class="conn-box">
+                        <h2>BACnet/SC (Secure Connect) <span class="status">Online</span></h2>
+                        <div class="conn-row"><span class="lbl">Hub URI</span><span class="val">${d.bacnet_sc.hub_uri}</span></div>
+                        <div class="conn-row"><span class="lbl">Security</span><span class="val">${d.bacnet_sc.security}</span></div>
+                        <div class="conn-row"><span class="lbl">Devices</span><span class="val">${d.bacnet_sc.devices?.length || 0} SC-enabled devices</span></div>
+                        <div class="sc-features">
+                            ${d.bacnet_sc.features.map(f => `<span class="sc-feature">${f}</span>`).join('')}
+                        </div>
+                        <a href="/api/bacnet-sc/config" class="download-btn">
+                            <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                            Download Client Package (ZIP)
+                        </a>
+                    </div>
+
+                    <!-- 3. BACnet/IP -->
+                    <div class="conn-box">
+                        <h2>BACnet/IP (Router) <span class="status">Online</span></h2>
+                        <div class="conn-row"><span class="lbl">Address</span><span class="val">${d.bacnet.host}:${d.bacnet.port}</span></div>
+                        <div class="conn-row"><span class="lbl">Device ID</span><span class="val">${d.bacnet.device_id}</span></div>
+                        <div class="conn-row"><span class="lbl">Name</span><span class="val">${d.bacnet.device_name}</span></div>
+                        <div class="conn-row"><span class="lbl">Routes</span><span class="val">Networks 1, 2, 3, 100 (IP, MS/TP, SC)</span></div>
+                        <div class="code-sample"><span class="c"># BAC0 library - discover devices</span>
+<span class="k">import</span> BAC0
+bacnet = BAC0.lite(ip=<span class="s">'${d.bacnet.host}/24'</span>)
+devices = bacnet.whois()  <span class="c"># Returns all devices</span>
+
+<span class="c"># Read from VAV controller (Device 10101)</span>
+room_temp = bacnet.read(<span class="s">'${d.bacnet.host}:47808 analogInput 1 presentValue'</span>)</div>
+                    </div>
+
+                    <!-- 4. BACnet MS/TP -->
+                    <div class="conn-box">
+                        <h2>BACnet MS/TP <span class="status">Online</span></h2>
+                        <div class="conn-row"><span class="lbl">Networks</span><span class="val">${mstpNets.length} Networks (Routed via IP)</span></div>
+                        ${mstpNets.map(n => `
+                            <div class="conn-row">
+                                <span class="lbl">NET ${n.network_number}</span>
+                                <span class="val">${n.baud_rate} baud, MAC ${n.router_mac} (Router)</span>
+                            </div>
+                        `).join('')}
+                        <div class="conn-row"><span class="lbl">Access</span><span class="val">Via BACnet/IP Router (NET 1)</span></div>
+                    </div>
+
+                    <!-- 5. Modbus TCP -->
+                    <div class="conn-box">
+                        <h2>Modbus TCP <span class="status">Online</span></h2>
+                        <div class="conn-row"><span class="lbl">Address</span><span class="val">${d.modbus.host}:${d.modbus.port}</span></div>
+                        <div class="conn-row"><span class="lbl">Unit ID</span><span class="val">${d.modbus.unit_id} (Gateway)</span></div>
+                        <div class="conn-row"><span class="lbl">Registers</span><span class="val">Holding (FC 3/6/16)</span></div>
+                        <div class="conn-row"><span class="lbl">Scaling</span><span class="val">x100</span></div>
+                        <div class="code-sample"><span class="c"># Access RTU devices through TCP gateway</span>
+<span class="k">from</span> pymodbus.client <span class="k">import</span> ModbusTcpClient
+client = ModbusTcpClient(<span class="s">'${d.modbus.host}'</span>, port=${d.modbus.port})
+client.connect()
+
+<span class="c"># Read Plant RTU (Unit ID 10) - CHW temps</span>
+plant = client.read_input_registers(100, 4, slave=10)
+chw_supply = plant.registers[0] / 100.0</div>
+                    </div>
+
+                    <!-- 6. Modbus RTU -->
+                    <div class="conn-box">
+                        <h2>Modbus RTU (RS-485) <span class="status">Online</span></h2>
+                        <div class="conn-row"><span class="lbl">Networks</span><span class="val">${rtuNets.length} Networks (Routed via TCP)</span></div>
+                        ${rtuNets.map(n => `
+                            <div class="conn-row">
+                                <span class="lbl">NET ${n.network_number}</span>
+                                <span class="val">${n.serial_port} | ${n.baud_rate} baud, ${n.parity}, ${n.data_bits}${n.stop_bits}</span>
+                            </div>
+                        `).join('')}
+                        <div class="conn-row"><span class="lbl">Access</span><span class="val">Via Modbus TCP Gateway (Unit ID = Target UID)</span></div>
+                    </div>
+                </div>
+                
+                <div class="modbus-section">
+                    <h2>Modbus Network Topology</h2>
+                    
+                    <div class="topology-stats">
+                        <div class="topo-stat">
+                            <div class="val">${d.modbus.device_count || 0}</div>
+                            <div class="lbl">Total Devices</div>
+                        </div>
+                        <div class="topo-stat">
+                            <div class="val">${d.modbus.networks?.length || 0}</div>
+                            <div class="lbl">RTU Networks</div>
+                        </div>
+                        <div class="topo-stat">
+                            <div class="val">${d.modbus.network_topology?.tcp_devices || 0}</div>
+                            <div class="lbl">TCP Gateway</div>
+                        </div>
+                        <div class="topo-stat">
+                            <div class="val">${d.modbus.network_topology?.rtu_devices || 0}</div>
+                            <div class="lbl">RTU Devices</div>
+                        </div>
+                    </div>
+                    
+                    <div class="net-grid">
+                        ${(d.modbus.networks || []).map(net => renderModbusNetwork(net)).join('')}
+                    </div>
+                </div>
+                
+                <div class="bacnet-section">
+                    <h2>BACnet Network Topology</h2>
+                    
+                    <div class="topology-stats">
+                        <div class="topo-stat">
+                            <div class="val">${d.bacnet.device_count}</div>
+                            <div class="lbl">Total Devices</div>
+                        </div>
+                        <div class="topo-stat">
+                            <div class="val">${d.bacnet.networks?.length || 0}</div>
+                            <div class="lbl">Networks</div>
+                        </div>
+                        <div class="topo-stat">
+                            <div class="val">${topo.ip_devices || 0}</div>
+                            <div class="lbl">BACnet/IP</div>
+                        </div>
+                        <div class="topo-stat">
+                            <div class="val">${topo.mstp_devices || 0}</div>
+                            <div class="lbl">MS/TP</div>
+                        </div>
+                        <div class="topo-stat">
+                            <div class="val">${topo.sc_devices || 0}</div>
+                            <div class="lbl">BACnet/SC</div>
+                        </div>
+                    </div>
+                    
+                    <div class="net-grid">
+                        ${(d.bacnet.networks || []).map(net => renderBACnetNetwork(net)).join('')}
+                    </div>
+                </div>
+                
+                <div class="points-wrap">
+                    <div class="points-header">
+                        <h2>Point Register Map <span class="count">(${d.total_points} points)</span></h2>
+                        <div class="filter-row">
+                            <input type="text" id="search" placeholder="Filter..." oninput="filterTable()">
+                            <select id="access" onchange="filterTable()">
+                                <option value="">All</option>
+                                <option value="rw">Writable</option>
+                                <option value="ro">Read-only</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="proto-tabs">
+                        <button class="on" onclick="setTab(this,'all')">All</button>
+                        <button onclick="setTab(this,'modbus')">Modbus</button>
+                        <button onclick="setTab(this,'bacnet')">BACnet</button>
+
+                    </div>
+                    <div class="pts-table-wrap">
+                        <table class="pts-table">
+                            <thead>
+                                <tr>
+                                    <th>Point</th>
+                                    <th>Unit</th>
+                                    <th></th>
+                                    <th class="c-modbus">Modbus</th>
+                                    <th class="c-bacnet">BACnet</th>
+
+                                </tr>
+                            </thead>
+                            <tbody id="ptbody">
+                                ${d.points.map(p => `<tr data-n="${p.name.toLowerCase()}" data-w="${p.writable}">
+                                    <td><span class="pt-name">${p.name}</span><br><span class="pt-desc">${p.description}</span></td>
+                                    <td>${p.unit}</td>
+                                    <td><span class="${p.writable ? 'rw-tag' : 'ro-tag'}">${p.writable ? 'RW' : 'RO'}</span></td>
+                                    <td class="c-modbus"><code>${p.modbus_register}</code></td>
+                                    <td class="c-bacnet"><code>${p.bacnet_object}</code></td>
+
+                                </tr>`).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function filterTable() {
+            const q = document.getElementById('search').value.toLowerCase();
+            const acc = document.getElementById('access').value;
+            document.querySelectorAll('#ptbody tr').forEach(r => {
+                let show = true;
+                if (q && !r.dataset.n.includes(q)) show = false;
+                if (acc === 'rw' && r.dataset.w !== 'true') show = false;
+                if (acc === 'ro' && r.dataset.w !== 'false') show = false;
+                r.style.display = show ? '' : 'none';
+            });
+        }
+        
+        function setTab(btn, t) {
+            document.querySelectorAll('.proto-tabs button').forEach(b => b.classList.remove('on'));
+            btn.classList.add('on');
+            const m = document.querySelectorAll('.c-modbus');
+            const b = document.querySelectorAll('.c-bacnet');
+            m.forEach(e => e.style.display = (t === 'all' || t === 'modbus') ? '' : 'none');
+            b.forEach(e => e.style.display = (t === 'all' || t === 'bacnet') ? '' : 'none');
+        }
+        
+        init();
+    </script>
+</body>
+</html>
