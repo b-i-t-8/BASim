@@ -843,6 +843,11 @@ class VAV(Updatable, PointProvider, PointMetadataProvider):
         full_path = f"{self._point_path}.{point_name}"
         override = get_override_manager().get_override(full_path)
         return override[1] if override else None
+
+    def get_effective_value(self, point_name: str) -> float:
+        """Get the effective value of a point, considering overrides."""
+        val = getattr(self, point_name)
+        return self._apply_override(point_name, val)
     
     def update(self, oat: float, dt: float, supply_air_temp: float = 55.0, time_of_day: float = 0.5) -> None:
         """Update VAV state based on physics and control logic."""
@@ -1010,6 +1015,25 @@ BUILDING_NAMES = [
     "Library", "Science Hall", "Arts Building", "Medical Center",
     "Parking Garage", "Recreation Center", "Dining Hall", "Technology Center",
     "Business School", "Law School", "Dormitory", "Faculty Building",
+    "Innovation Hub", "Alumni Center", "Graduate Hall", "Undergraduate Hall",
+    "Physics Lab", "Chemistry Lab", "Biology Lab", "Mathematics Hall",
+    "Computer Science Building", "Robotics Lab", "AI Research Center",
+    "Humanities Building", "Social Sciences Hall", "Language Center",
+    "Music Conservatory", "Theater Arts Center", "Design Studio",
+    "Architecture Hall", "Urban Planning Center", "Sustainability Center",
+    "Energy Research Lab", "Materials Science Building", "Nanotech Center",
+    "Bioinformatics Lab", "Genomics Center", "Neuroscience Institute",
+    "Psychology Building", "Education School", "Nursing School",
+    "Pharmacy School", "Public Health School", "Veterinary Center",
+    "Agricultural Hall", "Forestry Building", "Marine Science Center",
+    "Observatory", "Planetarium", "Museum", "Art Gallery",
+    "Concert Hall", "Stadium", "Arena", "Gymnasium",
+    "Aquatic Center", "Tennis Center", "Track and Field Complex",
+    "Welcome Center", "Admissions Office", "Registrar Office",
+    "Financial Aid Office", "Career Center", "Counseling Center",
+    "Health Services", "Police Station", "Fire Station",
+    "Maintenance Building", "Warehouse", "Central Plant",
+    "Power Station", "Water Treatment Plant", "Recycling Center"
 ]
 
 # Data Center naming
@@ -1068,6 +1092,11 @@ class AHU(Updatable, PointProvider, PointMetadataProvider):
         full_path = f"{self._point_path}.{point_name}"
         override = get_override_manager().get_override(full_path)
         return override[1] if override else None
+
+    def get_effective_value(self, point_name: str) -> float:
+        """Get the effective value of a point, considering overrides."""
+        val = getattr(self, point_name)
+        return self._apply_override(point_name, val)
     
     def update(self, oat: float = 0.0, dt: float = 0.0, time_of_day: float = 0.5, chw_supply_temp: float = 44.0, hw_supply_temp: float = 180.0) -> None:
         """Update AHU state based on conditions with realistic thermal calculations."""
@@ -1279,12 +1308,30 @@ class Building(PointProvider):
     square_footage: int = 10000  # Building size in sq ft
     occupied: bool = False
     occupancy_schedule: Tuple[int, int] = (7, 18) # Start hour, End hour
+    building_type: str = "Office"
+    efficiency_factor: float = 1.0
     profile: ControllerProfile = field(default_factory=lambda: get_profile("Distech"))
     
     def __post_init__(self):
         if not self.display_name:
             self.display_name = self.name
             
+    def get_load_kw(self) -> float:
+        """Calculate building electrical load (lighting + plug load)."""
+        # Base densities (W/sq ft)
+        lighting_density = 1.0 * self.efficiency_factor
+        equip_density = 1.5 * self.efficiency_factor
+        
+        if self.occupied:
+            occupancy_pct = 0.9 + random.uniform(-0.1, 0.1)
+        else:
+            occupancy_pct = 0.1 + random.uniform(0, 0.05)
+            
+        lighting_kw = self.square_footage * (0.2 + (lighting_density - 0.2) * occupancy_pct) / 1000.0
+        equipment_kw = self.square_footage * (0.3 + (equip_density - 0.3) * occupancy_pct) / 1000.0
+        
+        return lighting_kw + equipment_kw
+
     def update_occupancy(self, current_date: datetime):
         """Update occupancy status based on schedule and date."""
         # Check for override first
@@ -1301,7 +1348,11 @@ class Building(PointProvider):
             self.occupied = False
         else:
             start, end = self.occupancy_schedule
-            self.occupied = start <= hour < end
+            if start < end:
+                self.occupied = start <= hour < end
+            else:
+                # Overnight schedule (e.g. 22 to 6)
+                self.occupied = hour >= start or hour < end
     
     def get_points(self) -> Dict[str, float]:
         """Return all points from all AHUs and VAVs."""
@@ -1371,6 +1422,11 @@ class Chiller(Updatable, PointProvider):
         full_path = f"{self._point_path}.{point_name}"
         override = get_override_manager().get_override(full_path)
         return override[1] if override else None
+
+    def get_effective_value(self, point_name: str) -> float:
+        """Get the effective value of a point, considering overrides."""
+        val = getattr(self, point_name)
+        return self._apply_override(point_name, val)
     
     def update(self, oat: float = 0.0, dt: float = 0.0, cooling_demand: float = 0.0) -> None:
         """Update chiller state based on demand."""
@@ -1466,6 +1522,11 @@ class Boiler(Updatable, PointProvider):
         full_path = f"{self._point_path}.{point_name}"
         override = get_override_manager().get_override(full_path)
         return override[1] if override else None
+
+    def get_effective_value(self, point_name: str) -> float:
+        """Get the effective value of a point, considering overrides."""
+        val = getattr(self, point_name)
+        return self._apply_override(point_name, val)
     
     def update(self, oat: float = 0.0, dt: float = 0.0, heating_demand: float = 0.0) -> None:
         """Update boiler state based on demand."""
@@ -1562,6 +1623,11 @@ class CoolingTower(Updatable, PointProvider):
         full_path = f"{self._point_path}.{point_name}"
         override = get_override_manager().get_override(full_path)
         return override[1] if override else None
+
+    def get_effective_value(self, point_name: str) -> float:
+        """Get the effective value of a point, considering overrides."""
+        val = getattr(self, point_name)
+        return self._apply_override(point_name, val)
     
     def update(self, oat: float = 0.0, dt: float = 0.0, wet_bulb: float = None, 
                heat_rejection: float = 0.0) -> None:
@@ -1672,6 +1738,11 @@ class Pump(Updatable, PointProvider):
         full_path = f"{self._point_path}.{point_name}"
         override = get_override_manager().get_override(full_path)
         return override[1] if override else None
+
+    def get_effective_value(self, point_name: str) -> float:
+        """Get the effective value of a point, considering overrides."""
+        val = getattr(self, point_name)
+        return self._apply_override(point_name, val)
     
     def update(self, oat: float = 0.0, dt: float = 0.0, demand_gpm: float = 0.0) -> None:
         """Update pump state based on demand."""
@@ -3058,6 +3129,7 @@ class CRAC(Updatable, PointProvider):
     capacity_tons: float = 20.0
     status: bool = True
     supply_air_temp: float = 55.0
+    supply_air_setpoint: float = 68.0
     return_air_temp: float = 75.0
     supply_air_humidity_pct: float = 50.0
     return_air_humidity_pct: float = 45.0
@@ -3071,7 +3143,7 @@ class CRAC(Updatable, PointProvider):
     _point_path: str = ""
     
     # CRAC units have controllable points
-    WRITABLE_POINTS = {'status', 'supply_air_temp', 'fan_speed_pct'}
+    WRITABLE_POINTS = {'status', 'supply_air_temp', 'fan_speed_pct', 'supply_air_setpoint'}
     
     def _apply_override(self, point_name: str, default_value: float) -> float:
         if not self._point_path:
@@ -3086,6 +3158,11 @@ class CRAC(Updatable, PointProvider):
         full_path = f"{self._point_path}.{point_name}"
         override = get_override_manager().get_override(full_path)
         return override[1] if override else None
+
+    def get_effective_value(self, point_name: str) -> float:
+        """Get the effective value of a point, considering overrides."""
+        val = getattr(self, point_name)
+        return self._apply_override(point_name, val)
     
     def update(self, oat: float = 0.0, dt: float = 0.0, 
                heat_load_kw: float = 50.0, setpoint: float = 68.0) -> None:
@@ -3095,6 +3172,13 @@ class CRAC(Updatable, PointProvider):
         if status_override is not None:
             self.status = bool(self._apply_override('status', float(self.status)))
         
+        # Check for setpoint override
+        setpoint_override = self._get_override_status('supply_air_setpoint')
+        if setpoint_override is not None:
+            self.supply_air_setpoint = self._apply_override('supply_air_setpoint', self.supply_air_setpoint)
+        else:
+            self.supply_air_setpoint = setpoint
+
         if self.status and not self.fault:
             # Cooling required
             required_tons = heat_load_kw / 3.517  # kW to tons
@@ -3114,7 +3198,7 @@ class CRAC(Updatable, PointProvider):
                 self.supply_air_temp = self._apply_override('supply_air_temp', self.supply_air_temp)
             else:
                 # Supply temp tracks setpoint
-                self.supply_air_temp = setpoint - 10 + (self.cooling_output_pct / 100) * 5
+                self.supply_air_temp = self.supply_air_setpoint - 10 + (self.cooling_output_pct / 100) * 5
             
             # Return temp based on delta T
             self.return_air_temp = self.supply_air_temp + (heat_load_kw / 2)
@@ -3595,6 +3679,16 @@ class CampusType(Enum):
     DATA_CENTER = "Data Center"
     MIXED_USE = "Mixed Use"
 
+class BuildingType(Enum):
+    OFFICE = "Office"
+    LAB = "Lab"
+    CLASSROOM = "Classroom"
+    HOSPITAL = "Hospital"
+    DATA_CENTER = "Data Center"
+    WAREHOUSE = "Warehouse"
+    RESIDENTIAL = "Residential"
+    RETAIL = "Retail"
+
 class CampusModelGenerator:
     """
     Generates campus model structure (SRP - only handles model generation).
@@ -3656,6 +3750,54 @@ class CampusModelGenerator:
             # Assign a random controller profile to this building
             profile = get_random_profile()
             
+            # Determine building type based on name or random
+            b_type = BuildingType.OFFICE
+            eff_factor = 1.0
+            schedule = (7, 18)
+            
+            name_lower = display_name.lower()
+            if "lab" in name_lower or "research" in name_lower:
+                b_type = BuildingType.LAB
+                eff_factor = 1.2 # Higher load
+                schedule = (6, 20)
+            elif "hospital" in name_lower or "medical" in name_lower or "clinic" in name_lower:
+                b_type = BuildingType.HOSPITAL
+                eff_factor = 1.5
+                schedule = (0, 24) # 24/7
+            elif "data" in name_lower or "server" in name_lower:
+                b_type = BuildingType.DATA_CENTER
+                eff_factor = 2.0
+                schedule = (0, 24)
+            elif "warehouse" in name_lower or "storage" in name_lower:
+                b_type = BuildingType.WAREHOUSE
+                eff_factor = 0.5
+                schedule = (6, 16)
+            elif "residential" in name_lower or "apartment" in name_lower or "hotel" in name_lower:
+                b_type = BuildingType.RESIDENTIAL
+                eff_factor = 0.8
+                schedule = (17, 8) # Night occupancy (handled by logic?)
+                # Note: simple logic assumes start < end. If start > end (overnight), need to handle in update_occupancy
+                # For now, let's keep it simple: 17 to 24 + 0 to 8. 
+                # But update_occupancy logic is: start <= hour < end.
+                # Let's just say 17-23 for now to avoid complexity, or fix update_occupancy.
+                schedule = (16, 23) 
+            elif "retail" in name_lower or "shop" in name_lower or "mall" in name_lower:
+                b_type = BuildingType.RETAIL
+                eff_factor = 1.1
+                schedule = (9, 21)
+            
+            # Randomize schedule slightly
+            if schedule != (0, 24):
+                start = max(0, schedule[0] + random.randint(-1, 1))
+                end = min(24, schedule[1] + random.randint(-1, 1))
+                schedule = (start, end)
+                
+            # Randomize efficiency (Old vs New)
+            if random.random() > 0.7:
+                eff_factor *= 1.2 # Old building
+            elif random.random() < 0.3:
+                eff_factor *= 0.8 # LEED building
+
             bldg = Building(
                 id=b_idx + 1,
                 name=f"Building_{b_idx + 1}",
@@ -3663,7 +3805,10 @@ class CampusModelGenerator:
                 device_instance=1000 + (b_idx * 100),
                 floor_count=floor_count,
                 square_footage=sq_ft,
-                profile=profile
+                profile=profile,
+                building_type=b_type.value,
+                efficiency_factor=eff_factor,
+                occupancy_schedule=schedule
             )
             
             # Determine how many 100% OA AHUs (usually 1-2 per building for fresh air)
@@ -4292,102 +4437,93 @@ class CampusEngine(PhysicsEngine):
         while self._running:
             start_time = time.time()
             
-            dt = 5.0 * self._simulation_speed
-            self._simulation_date += timedelta(seconds=dt)
-            
-            self._update_oat()
-            
-            # Update active scenario (may override OAT or other params)
-            self._scenario_manager.update()
-            
-            # Update Building Occupancy
-            for bldg in self._buildings:
-                bldg.update_occupancy(self._simulation_date)
-            
-            # Get plant temperatures for AHU coil calculations
-            chw_supply = self._central_plant.chw_supply_temp
-            hw_supply = self._central_plant.hw_supply_temp
-            
-            # Calculate campus cooling/heating demand from AHU valve positions
-            total_cooling_demand = 0.0  # Tons
-            total_heating_demand = 0.0  # MBH
-            total_reheat_demand = 0.0   # MBH from VAV reheat
-            total_ahu_kw = 0.0          # Fan power
-            
-            for bldg in self._buildings:
-                for ahu in bldg.ahus:
-                    # Update AHU with plant temperatures and time of day
-                    ahu.update(self._oat, dt, time_of_day=self._time_of_day,
-                              chw_supply_temp=chw_supply, hw_supply_temp=hw_supply)
-                    
-                    # Calculate cooling load from coil (tons = GPM * ΔT / 24)
-                    if ahu.cooling_valve > 0:
-                        # Estimate flow based on valve position
-                        coil_gpm = 30 * (ahu.cooling_valve / 100.0)  # ~30 GPM at full open
-                        delta_t = min(10, (ahu.mixed_air_temp - ahu.supply_temp))
-                        cooling_tons = coil_gpm * delta_t / 24.0
-                        total_cooling_demand += max(0, cooling_tons)
-                    
-                    # Calculate heating load from AHU coil
-                    if ahu.heating_valve > 0:
-                        coil_mbh = 500 * (ahu.heating_valve / 100.0)  # ~500 MBH capacity per AHU
-                        total_heating_demand += coil_mbh
-                    
-                    # Fan power: approximately 0.5-1 HP per 1000 CFM, ~0.75 kW per HP
-                    fan_hp = len(ahu.vavs) * 0.3  # ~300 CFM per VAV, 0.5 HP per 1000 CFM
-                    fan_kw = fan_hp * 0.75 * (ahu.fan_speed / 100.0) ** 3  # Affinity laws
-                    total_ahu_kw += fan_kw
-                    
-                    # Update VAVs with AHU supply temp
-                    for vav in ahu.vavs:
-                        vav.update(self._oat, dt, supply_air_temp=ahu.supply_temp, 
-                                  time_of_day=self._time_of_day)
+            with self._lock:
+                dt = 5.0 * self._simulation_speed
+                self._simulation_date += timedelta(seconds=dt)
+                
+                self._update_oat()
+                
+                # Update active scenario (may override OAT or other params)
+                self._scenario_manager.update()
+                
+                # Update Building Occupancy
+                for bldg in self._buildings:
+                    bldg.update_occupancy(self._simulation_date)
+                
+                # Get plant temperatures for AHU coil calculations
+                chw_supply = self._central_plant.chw_supply_temp
+                hw_supply = self._central_plant.hw_supply_temp
+                
+                # Calculate campus cooling/heating demand from AHU valve positions
+                total_cooling_demand = 0.0  # Tons
+                total_heating_demand = 0.0  # MBH
+                total_reheat_demand = 0.0   # MBH from VAV reheat
+                total_ahu_kw = 0.0          # Fan power
+                
+                for bldg in self._buildings:
+                    for ahu in bldg.ahus:
+                        # Update AHU with plant temperatures and time of day
+                        ahu.update(self._oat, dt, time_of_day=self._time_of_day,
+                                  chw_supply_temp=chw_supply, hw_supply_temp=hw_supply)
                         
-                        # Calculate reheat load from VAV
-                        if vav.reheat_valve > 0:
-                            # Reheat coil ~10 MBH capacity per VAV
-                            reheat_mbh = 10 * (vav.reheat_valve / 100.0)
-                            total_reheat_demand += reheat_mbh
-            
-            # Total heating includes AHU coils and VAV reheat
-            total_heating_demand += total_reheat_demand
-            
-            # Update central plant with campus demand
-            self._central_plant.update(
-                self._oat, dt, 
-                cooling_demand=total_cooling_demand,
-                heating_demand=total_heating_demand
-            )
-            
-            # Calculate total campus electrical load
-            total_campus_kw = self._central_plant.total_plant_kw + total_ahu_kw
-            
-            # Building loads vary with time of day (occupancy)
-            total_sq_ft = sum(b.square_footage for b in self._buildings)
-            
-            # Lighting: ~1.0 W/sq ft during occupied, 0.2 W/sq ft unoccupied
-            # Equipment: ~1.5 W/sq ft during occupied, 0.3 W/sq ft unoccupied
-            if 0.29 < self._time_of_day < 0.75:  # ~7am to 6pm
-                occupancy = 0.3 + 0.7 * math.sin((self._time_of_day - 0.29) * math.pi / 0.46)
-            else:
-                occupancy = 0.1
-            
-            lighting_kw = total_sq_ft * (0.2 + 0.8 * occupancy) / 1000.0
-            equipment_kw = total_sq_ft * (0.3 + 1.2 * occupancy) / 1000.0
-            total_campus_kw += lighting_kw + equipment_kw
-            
-            # Add data center load (24/7 constant IT load)
-            if self._data_center:
-                self._data_center.update(self._oat, dt)
-                total_campus_kw += self._data_center.total_kw
-            
-            # Add wastewater load (24/7 with some variation)
-            if self._wastewater_facility:
-                self._wastewater_facility.update(self._oat, dt)
-                total_campus_kw += self._wastewater_facility.total_kw
-            
-            # Update electrical system with time of day for solar calculation
-            self._electrical_system.update(self._oat, dt, total_campus_kw, self._time_of_day)
+                        # Calculate cooling load from coil (tons = GPM * ΔT / 24)
+                        if ahu.cooling_valve > 0:
+                            # Estimate flow based on valve position
+                            coil_gpm = 30 * (ahu.cooling_valve / 100.0)  # ~30 GPM at full open
+                            delta_t = min(10, (ahu.mixed_air_temp - ahu.supply_temp))
+                            cooling_tons = coil_gpm * delta_t / 24.0
+                            total_cooling_demand += max(0, cooling_tons)
+                        
+                        # Calculate heating load from AHU coil
+                        if ahu.heating_valve > 0:
+                            coil_mbh = 500 * (ahu.heating_valve / 100.0)  # ~500 MBH capacity per AHU
+                            total_heating_demand += coil_mbh
+                        
+                        # Fan power: approximately 0.5-1 HP per 1000 CFM, ~0.75 kW per HP
+                        fan_hp = len(ahu.vavs) * 0.3  # ~300 CFM per VAV, 0.5 HP per 1000 CFM
+                        fan_kw = fan_hp * 0.75 * (ahu.fan_speed / 100.0) ** 3  # Affinity laws
+                        total_ahu_kw += fan_kw
+                        
+                        # Update VAVs with AHU supply temp
+                        for vav in ahu.vavs:
+                            vav.update(self._oat, dt, supply_air_temp=ahu.supply_temp, 
+                                      time_of_day=self._time_of_day)
+                            
+                            # Calculate reheat load from VAV
+                            if vav.reheat_valve > 0:
+                                # Reheat coil ~10 MBH capacity per VAV
+                                reheat_mbh = 10 * (vav.reheat_valve / 100.0)
+                                total_reheat_demand += reheat_mbh
+                
+                # Total heating includes AHU coils and VAV reheat
+                total_heating_demand += total_reheat_demand
+                
+                # Update central plant with campus demand
+                self._central_plant.update(
+                    self._oat, dt, 
+                    cooling_demand=total_cooling_demand,
+                    heating_demand=total_heating_demand
+                )
+                
+                # Calculate total campus electrical load
+                total_campus_kw = self._central_plant.total_plant_kw + total_ahu_kw
+                
+                # Building loads (Lighting + Plug Load)
+                building_load_kw = sum(b.get_load_kw() for b in self._buildings)
+                total_campus_kw += building_load_kw
+                
+                # Add data center load (24/7 constant IT load)
+                if self._data_center:
+                    self._data_center.update(self._oat, dt)
+                    total_campus_kw += self._data_center.total_kw
+                
+                # Add wastewater load (24/7 with some variation)
+                if self._wastewater_facility:
+                    self._wastewater_facility.update(self._oat, dt)
+                    total_campus_kw += self._wastewater_facility.total_kw
+                
+                # Update electrical system with time of day for solar calculation
+                self._electrical_system.update(self._oat, dt, total_campus_kw, self._time_of_day)
             
             sleep_time = 5.0 / self._simulation_speed
             elapsed = time.time() - start_time

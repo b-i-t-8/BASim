@@ -69,7 +69,7 @@ def generate_random_config(seed: str = None) -> dict:
     location = random.choice(WORLD_LOCATIONS)
     
     # Generate random campus size
-    num_buildings = random.randint(1, 5)
+    num_buildings = random.randint(1, 20)
     num_ahus = random.randint(2, 8)
     num_vavs = random.randint(3, 15)
     simulation_speed = round(random.uniform(0.5, 5.0), 1)
@@ -339,11 +339,12 @@ def create_app(engine: CampusEngine) -> Flask:
         for ch in plant.chillers:
             chillers.append({
                 'id': ch.id,
+                'point_path': ch._point_path,
                 'name': ch.name,
-                'status': ch.status,
+                'status': bool(ch.get_effective_value('status')),
                 'capacity_tons': ch.capacity_tons,
                 'load_percent': round(ch.load_percent, 1),
-                'chw_supply_temp': round(params.convert_temp(ch.chw_supply_temp), 1),
+                'chw_supply_temp': round(params.convert_temp(ch.get_effective_value('chw_supply_temp')), 1),
                 'chw_return_temp': round(params.convert_temp(ch.chw_return_temp), 1),
                 'chw_flow_gpm': round(params.convert_flow_water(ch.chw_flow_gpm), 0),
                 'kw': round(ch.kw, 1),
@@ -354,11 +355,12 @@ def create_app(engine: CampusEngine) -> Flask:
         for blr in plant.boilers:
             boilers.append({
                 'id': blr.id,
+                'point_path': blr._point_path,
                 'name': blr.name,
-                'status': blr.status,
+                'status': bool(blr.get_effective_value('status')),
                 'capacity_mbh': blr.capacity_mbh,
-                'firing_rate': round(blr.firing_rate, 1),
-                'hw_supply_temp': round(params.convert_temp(blr.hw_supply_temp), 1),
+                'firing_rate': round(blr.get_effective_value('firing_rate'), 1),
+                'hw_supply_temp': round(params.convert_temp(blr.get_effective_value('hw_supply_temp')), 1),
                 'hw_return_temp': round(params.convert_temp(blr.hw_return_temp), 1),
                 'hw_flow_gpm': round(params.convert_flow_water(blr.hw_flow_gpm), 0),
                 'gas_flow_cfh': round(params.convert_flow_gas(blr.gas_flow_cfh), 0),
@@ -369,10 +371,11 @@ def create_app(engine: CampusEngine) -> Flask:
         for ct in plant.cooling_towers:
             cooling_towers.append({
                 'id': ct.id,
+                'point_path': ct._point_path,
                 'name': ct.name,
-                'status': ct.status,
+                'status': bool(ct.get_effective_value('status')),
                 'capacity_tons': ct.capacity_tons,
-                'fan_speed': round(ct.fan_speed, 1),
+                'fan_speed': round(ct.get_effective_value('fan_speed'), 1),
                 'cw_supply_temp': round(params.convert_temp(ct.cw_supply_temp), 1),
                 'cw_return_temp': round(params.convert_temp(ct.cw_return_temp), 1),
                 'cw_flow_gpm': round(params.convert_flow_water(ct.cw_flow_gpm), 0),
@@ -384,10 +387,11 @@ def create_app(engine: CampusEngine) -> Flask:
         for pump in plant.chw_pumps + plant.hw_pumps + plant.cw_pumps:
             pumps.append({
                 'id': pump.id,
+                'point_path': pump._point_path,
                 'name': pump.name,
                 'pump_type': pump.pump_type,
-                'status': pump.status,
-                'speed': round(pump.speed, 1),
+                'status': bool(pump.get_effective_value('status')),
+                'speed': round(pump.get_effective_value('speed'), 1),
                 'flow_gpm': round(params.convert_flow_water(pump.flow_gpm), 0),
                 'head_ft': round(params.convert_head_ft(pump.differential_pressure * 2.31), 1),
                 'differential_psi': round(pump.differential_pressure, 1),
@@ -439,6 +443,7 @@ def create_app(engine: CampusEngine) -> Flask:
             },
             'generators': [{
                 'id': g.id,
+                'point_path': g._point_path,
                 'name': g.name,
                 'capacity_kw': g.capacity_kw,
                 'status': g.status,
@@ -449,6 +454,7 @@ def create_app(engine: CampusEngine) -> Flask:
             } for g in elec.generators],
             'ups_systems': [{
                 'id': u.id,
+                'point_path': u._point_path,
                 'name': u.name,
                 'capacity_kva': u.capacity_kva,
                 'status': u.status,
@@ -460,6 +466,7 @@ def create_app(engine: CampusEngine) -> Flask:
             } for u in elec.ups_systems],
             'solar_arrays': [{
                 'id': s.id,
+                'point_path': s._point_path,
                 'name': s.name,
                 'capacity_kw': s.capacity_kw,
                 'status': s.status,
@@ -502,6 +509,7 @@ def create_app(engine: CampusEngine) -> Flask:
             'total_kw': round(ww.total_kw, 1),
             'lift_stations': [{
                 'id': ls.id,
+                'point_path': ls._point_path,
                 'name': ls.name,
                 'wet_well_level_ft': round(params.convert_head_ft(ls.wet_well_level_ft), 2),
                 'flow_gpm': round(params.convert_flow_water(ls.flow_gpm), 0),
@@ -510,6 +518,7 @@ def create_app(engine: CampusEngine) -> Flask:
             } for ls in ww.lift_stations],
             'blowers': [{
                 'id': b.id,
+                'point_path': b._point_path,
                 'name': b.name,
                 'status': b.status,
                 'speed_pct': round(b.speed_pct, 1),
@@ -519,6 +528,7 @@ def create_app(engine: CampusEngine) -> Flask:
             } for b in ww.blowers],
             'clarifiers': [{
                 'id': c.id,
+                'point_path': c._point_path,
                 'name': c.name,
                 'clarifier_type': c.clarifier_type,
                 'flow_mgd': round(c.flow_mgd, 2),
@@ -528,6 +538,7 @@ def create_app(engine: CampusEngine) -> Flask:
             } for c in ww.clarifiers],
             'uv_systems': [{
                 'id': uv.id,
+                'point_path': uv._point_path,
                 'name': uv.name,
                 'status': uv.status,
                 'uv_intensity_pct': round(uv.uv_intensity_pct, 1),
@@ -571,13 +582,14 @@ def create_app(engine: CampusEngine) -> Flask:
             } for r in dc.server_racks],
             'crac_units': [{
                 'id': c.id,
+                'point_path': c._point_path,
                 'name': c.name,
-                'status': c.status,
+                'status': bool(c.get_effective_value('status')),
                 'capacity_tons': c.capacity_tons,
-                'supply_air_temp': round(params.convert_temp(c.supply_air_temp), 1),
+                'supply_air_temp': round(params.convert_temp(c.get_effective_value('supply_air_temp')), 1),
                 'return_air_temp': round(params.convert_temp(c.return_air_temp), 1),
                 'cooling_output_pct': round(c.cooling_output_pct, 1),
-                'fan_speed_pct': round(c.fan_speed_pct, 1),
+                'fan_speed_pct': round(c.get_effective_value('fan_speed_pct'), 1),
                 'kw': round(c.kw, 1),
             } for c in dc.crac_units],
             'ups_systems': [{
@@ -625,12 +637,13 @@ def create_app(engine: CampusEngine) -> Flask:
                     for vav in ahu.vavs:
                         vavs.append({
                             'id': vav.id,
+                            'point_path': vav._point_path,
                             'name': vav.name,
                             'zone_name': vav.zone_name,
                             'room_temp': round(params.convert_temp(vav.room_temp), 2),
                             'discharge_air_temp': round(params.convert_temp(vav.discharge_air_temp), 2),
-                            'cooling_setpoint': round(params.convert_temp(vav.cooling_setpoint), 2),
-                            'heating_setpoint': round(params.convert_temp(vav.heating_setpoint), 2),
+                            'cooling_setpoint': round(params.convert_temp(vav.get_effective_value('cooling_setpoint')), 2),
+                            'heating_setpoint': round(params.convert_temp(vav.get_effective_value('heating_setpoint')), 2),
                             'damper_position': round(vav.damper_position, 2),
                             'cfm_max': round(params.convert_flow_air(vav.cfm_max), 0),
                             'cfm_min': round(params.convert_flow_air(vav.cfm_min), 0),
@@ -640,10 +653,11 @@ def create_app(engine: CampusEngine) -> Flask:
                         })
                     ahus.append({
                         'id': ahu.id,
+                        'point_path': ahu._point_path,
                         'name': ahu.name,
                         'ahu_type': ahu.ahu_type,
                         'supply_temp': round(params.convert_temp(ahu.supply_temp), 2),
-                        'supply_temp_setpoint': round(params.convert_temp(ahu.supply_temp_setpoint), 2),
+                        'supply_temp_setpoint': round(params.convert_temp(ahu.get_effective_value('supply_temp_setpoint')), 2),
                         'fan_status': ahu.fan_status,
                         'fan_speed': round(ahu.fan_speed, 2),
                         'return_temp': round(params.convert_temp(ahu.return_temp), 2),
@@ -679,8 +693,8 @@ def create_app(engine: CampusEngine) -> Flask:
                             'name': vav.name,
                             'room_temp': round(vav.room_temp, 2),
                             'discharge_air_temp': round(vav.discharge_air_temp, 2),
-                            'cooling_setpoint': round(vav.cooling_setpoint, 2),
-                            'heating_setpoint': round(vav.heating_setpoint, 2),
+                            'cooling_setpoint': round(vav.get_effective_value('cooling_setpoint'), 2),
+                            'heating_setpoint': round(vav.get_effective_value('heating_setpoint'), 2),
                             'damper_position': round(vav.damper_position, 2),
                             'cfm_actual': round(vav.cfm_actual, 0),
                             'reheat_valve': round(vav.reheat_valve, 2),
@@ -735,8 +749,8 @@ def create_app(engine: CampusEngine) -> Flask:
             'name': target_vav.name,
             'room_temp': round(target_vav.room_temp, 2),
             'discharge_air_temp': round(target_vav.discharge_air_temp, 2),
-            'cooling_setpoint': round(target_vav.cooling_setpoint, 2),
-            'heating_setpoint': round(target_vav.heating_setpoint, 2),
+            'cooling_setpoint': round(target_vav.get_effective_value('cooling_setpoint'), 2),
+            'heating_setpoint': round(target_vav.get_effective_value('heating_setpoint'), 2),
             'damper_position': round(target_vav.damper_position, 2),
             'cfm_actual': round(target_vav.cfm_actual, 0),
             'reheat_valve': round(target_vav.reheat_valve, 2),

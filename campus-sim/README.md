@@ -1,5 +1,7 @@
 # BASim - Campus Simulator
 
+![Version](https://img.shields.io/badge/version-0.0.2-blue.svg)
+
 BASim is a building automation simulator. It creates a fake (but realistic) university campus with chillers, boilers, AHUs, VAVs, electrical systems — the whole deal. Everything talks real protocols (Modbus, BACnet), so you can point actual BAS software at it for testing, training, or demos.
 
 ---

@@ -119,6 +119,14 @@ class CampusSizeConfig:
     @classmethod
     def large(cls) -> 'CampusSizeConfig':
         return cls("Large", 5, 10, 20)
+
+    @classmethod
+    def huge(cls) -> 'CampusSizeConfig':
+        return cls("Huge", 10, 15, 25)
+
+    @classmethod
+    def massive(cls) -> 'CampusSizeConfig':
+        return cls("Massive", 20, 20, 30)
     
     @classmethod
     def from_string(cls, size: str) -> 'CampusSizeConfig':
@@ -127,6 +135,8 @@ class CampusSizeConfig:
             "Small": cls.small,
             "Medium": cls.medium,
             "Large": cls.large,
+            "Huge": cls.huge,
+            "Massive": cls.massive,
         }
         factory = configs.get(size, cls.small)
         return factory()

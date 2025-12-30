@@ -318,7 +318,7 @@ function renderBuilding(building) {
     
     building.ahus.forEach(ahu => {
         const isOA = ahu.ahu_type === '100%OA';
-        const ahuPath = `building_${building.id}/ahu_${ahu.id}`;
+        const ahuPath = ahu.point_path;
         
         html += `
             <div class="section">
@@ -332,14 +332,14 @@ function renderBuilding(building) {
                     </thead>
                     <tbody>
                         <tr>
-                            <td>${clickablePoint(ahuPath + '/enable', ahu.fan_status, '', 'Enable', isAdmin, true, '', true)}</td>
-                            <td>${clickablePoint(ahuPath + '/supply_temp_setpoint', ahu.supply_temp_setpoint, currentTempUnit, 'Supply Setpoint', isAdmin, true)}</td>
-                            <td>${clickablePoint(ahuPath + '/supply_temp', ahu.supply_temp, currentTempUnit, 'Supply Temp', isAdmin, false)}</td>
-                            <td>${clickablePoint(ahuPath + '/return_temp', ahu.return_temp, currentTempUnit, 'Return Temp', isAdmin, false)}</td>
-                            <td>${clickablePoint(ahuPath + '/mixed_air_temp', ahu.mixed_air_temp, currentTempUnit, 'Mixed Air Temp', isAdmin, false)}</td>
-                            <td><div class="bar-cell">${clickablePoint(ahuPath + '/supply_fan_cmd', ahu.fan_speed, '%', 'Fan Speed', isAdmin, true)}<div class="mini-bar"><div class="mini-fill" style="width:${ahu.fan_speed || 0}%"></div></div></div></td>
-                            <td><div class="bar-cell">${clickablePoint(ahuPath + '/oa_damper_cmd', ahu.outside_air_damper, '%', 'OA Damper', isAdmin, true)}<div class="mini-bar"><div class="mini-fill" style="width:${ahu.outside_air_damper || 0}%"></div></div></div></td>
-                            <td>${clickablePoint(ahuPath + '/filter_dp', ahu.filter_dp, currentPressureWCUnit, 'Filter ΔP', isAdmin, false)}</td>
+                            <td>${clickablePoint(ahuPath + '.fan_status', ahu.fan_status, '', 'Enable', isAdmin, true, '', true)}</td>
+                            <td>${clickablePoint(ahuPath + '.supply_temp_setpoint', ahu.supply_temp_setpoint, currentTempUnit, 'Supply Setpoint', isAdmin, true)}</td>
+                            <td>${clickablePoint(ahuPath + '.supply_temp', ahu.supply_temp, currentTempUnit, 'Supply Temp', isAdmin, false)}</td>
+                            <td>${clickablePoint(ahuPath + '.return_temp', ahu.return_temp, currentTempUnit, 'Return Temp', isAdmin, false)}</td>
+                            <td>${clickablePoint(ahuPath + '.mixed_air_temp', ahu.mixed_air_temp, currentTempUnit, 'Mixed Air Temp', isAdmin, false)}</td>
+                            <td><div class="bar-cell">${clickablePoint(ahuPath + '.fan_speed', ahu.fan_speed, '%', 'Fan Speed', isAdmin, true)}<div class="mini-bar"><div class="mini-fill" style="width:${ahu.fan_speed || 0}%"></div></div></div></td>
+                            <td><div class="bar-cell">${clickablePoint(ahuPath + '.outside_air_damper', ahu.outside_air_damper, '%', 'OA Damper', isAdmin, true)}<div class="mini-bar"><div class="mini-fill" style="width:${ahu.outside_air_damper || 0}%"></div></div></div></td>
+                            <td>${clickablePoint(ahuPath + '.filter_dp', ahu.filter_dp, currentPressureWCUnit, 'Filter ΔP', isAdmin, false)}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -376,7 +376,7 @@ function renderBuilding(building) {
 }
 
 function renderVAVRow(buildingId, ahuId, vav, isAdmin) {
-    const path = `building_${buildingId}/ahu_${ahuId}/vav_${vav.id}`;
+    const path = vav.point_path;
     const tempClass = getTempClass(vav.room_temp);
     const damperPct = vav.damper_position?.toFixed(0) || 0;
     const reheatPct = vav.reheat_valve?.toFixed(0) || 0;
@@ -385,18 +385,18 @@ function renderVAVRow(buildingId, ahuId, vav, isAdmin) {
     return `
         <tr class="${occClass}">
             <td><strong>${vav.zone_name || vav.name}</strong></td>
-            <td class="${tempClass}">${clickablePoint(path + '/room_temp', vav.room_temp, currentTempUnit, 'Room Temp', isAdmin, false)}</td>
-            <td>${clickablePoint(path + '/cooling_setpoint', vav.cooling_setpoint, currentTempUnit, 'Cooling SP', isAdmin, true)}</td>
-            <td>${clickablePoint(path + '/heating_setpoint', vav.heating_setpoint, currentTempUnit, 'Heating SP', isAdmin, true)}</td>
+            <td class="${tempClass}">${clickablePoint(path + '.room_temp', vav.room_temp, currentTempUnit, 'Room Temp', isAdmin, false)}</td>
+            <td>${clickablePoint(path + '.cooling_setpoint', vav.cooling_setpoint, currentTempUnit, 'Cooling SP', isAdmin, true)}</td>
+            <td>${clickablePoint(path + '.heating_setpoint', vav.heating_setpoint, currentTempUnit, 'Heating SP', isAdmin, true)}</td>
             <td>
                 <div class="bar-cell">
-                    ${clickablePoint(path + '/damper_cmd', damperPct, '%', 'Damper', isAdmin, true)}
+                    ${clickablePoint(path + '.damper_position', damperPct, '%', 'Damper', isAdmin, true)}
                     <div class="mini-bar"><div class="mini-fill" style="width:${damperPct}%;background:${getDamperColor(damperPct)}"></div></div>
                 </div>
             </td>
             <td>
                 <div class="bar-cell">
-                    ${clickablePoint(path + '/reheat_cmd', reheatPct, '%', 'Reheat', isAdmin, true)}
+                    ${clickablePoint(path + '.reheat_valve', reheatPct, '%', 'Reheat', isAdmin, true)}
                     <div class="mini-bar"><div class="mini-fill reheat" style="width:${reheatPct}%"></div></div>
                 </div>
             </td>
@@ -423,9 +423,9 @@ function renderPlant(plant) {
         <div class="view-header">
             <h2>CENTRAL PLANT</h2>
             <div class="view-stats">
-                <div class="stat"><span class="stat-value">${plant.total_cooling_tons.toFixed(0)}</span><span class="stat-label">Cooling Tons</span></div>
-                <div class="stat"><span class="stat-value">${plant.total_heating_mbh.toFixed(0)}</span><span class="stat-label">Heating MBH</span></div>
-                <div class="stat"><span class="stat-value">${plant.total_plant_kw.toFixed(0)}</span><span class="stat-label">Plant kW</span></div>
+                <div class="stat"><span class="stat-value">${plant.total_cooling_tons?.toFixed(0) || '0'}</span><span class="stat-label">Cooling Tons</span></div>
+                <div class="stat"><span class="stat-value">${plant.total_heating_mbh?.toFixed(0) || '0'}</span><span class="stat-label">Heating MBH</span></div>
+                <div class="stat"><span class="stat-value">${plant.total_plant_kw?.toFixed(0) || '0'}</span><span class="stat-label">Plant kW</span></div>
             </div>
         </div>
         
@@ -482,61 +482,61 @@ function renderPlant(plant) {
 }
 
 function renderChillerRow(ch, isAdmin) {
-    const path = `central_plant/chiller_${ch.id}`;
+    const path = ch.point_path;
     return `
         <tr>
             <td><strong>${ch.name}</strong></td>
-            <td>${clickablePoint(path + '/enable', ch.status, '', 'Enable', isAdmin, true, '', true)}</td>
-            <td>${clickablePoint(path + '/chw_setpoint', ch.chw_supply_temp, currentTempUnit, 'CHW Setpoint', isAdmin, true)}</td>
-            <td>${ch.chw_return_temp.toFixed(1)}${currentTempUnit}</td>
-            <td>${ch.chw_flow_gpm.toFixed(0)} ${currentFlowWaterUnit}</td>
-            <td><div class="bar-cell"><span>${ch.load_percent.toFixed(0)}%</span><div class="mini-bar"><div class="mini-fill chiller" style="width:${ch.load_percent}%"></div></div></div></td>
-            <td>${ch.kw.toFixed(1)}</td>
+            <td>${clickablePoint(path + '.status', ch.status, '', 'Enable', isAdmin, true, '', true)}</td>
+            <td>${clickablePoint(path + '.chw_supply_temp', ch.chw_supply_temp, currentTempUnit, 'CHW Setpoint', isAdmin, true)}</td>
+            <td>${ch.chw_return_temp?.toFixed(1) || '--'}${currentTempUnit}</td>
+            <td>${ch.chw_flow_gpm?.toFixed(0) || '0'} ${currentFlowWaterUnit}</td>
+            <td><div class="bar-cell"><span>${ch.load_percent?.toFixed(0) || '0'}%</span><div class="mini-bar"><div class="mini-fill chiller" style="width:${ch.load_percent || 0}%"></div></div></div></td>
+            <td>${ch.kw?.toFixed(1) || '0'}</td>
         </tr>
     `;
 }
 
 function renderBoilerRow(b, isAdmin) {
-    const path = `central_plant/boiler_${b.id}`;
+    const path = b.point_path;
     return `
         <tr>
             <td><strong>${b.name}</strong></td>
-            <td>${clickablePoint(path + '/enable', b.status, '', 'Enable', isAdmin, true, '', true)}</td>
-            <td>${clickablePoint(path + '/hw_setpoint', b.hw_supply_temp, currentTempUnit, 'HW Setpoint', isAdmin, true)}</td>
-            <td>${b.hw_return_temp.toFixed(1)}${currentTempUnit}</td>
-            <td>${b.hw_flow_gpm.toFixed(0)} ${currentFlowWaterUnit}</td>
-            <td><div class="bar-cell"><span>${b.firing_rate.toFixed(0)}%</span><div class="mini-bar"><div class="mini-fill boiler" style="width:${b.firing_rate}%"></div></div></div></td>
-            <td>${b.gas_flow_cfh.toFixed(0)} ${currentFlowGasUnit}</td>
+            <td>${clickablePoint(path + '.status', b.status, '', 'Enable', isAdmin, true, '', true)}</td>
+            <td>${clickablePoint(path + '.hw_supply_temp', b.hw_supply_temp, currentTempUnit, 'HW Setpoint', isAdmin, true)}</td>
+            <td>${b.hw_return_temp?.toFixed(1) || '--'}${currentTempUnit}</td>
+            <td>${b.hw_flow_gpm?.toFixed(0) || '0'} ${currentFlowWaterUnit}</td>
+            <td><div class="bar-cell"><span>${b.firing_rate?.toFixed(0) || '0'}%</span><div class="mini-bar"><div class="mini-fill boiler" style="width:${b.firing_rate || 0}%"></div></div></div></td>
+            <td>${b.gas_flow_cfh?.toFixed(0) || '0'} ${currentFlowGasUnit}</td>
         </tr>
     `;
 }
 
 function renderCoolingTowerRow(ct, isAdmin) {
-    const path = `central_plant/cooling_tower_${ct.id}`;
+    const path = ct.point_path;
     return `
         <tr>
             <td><strong>${ct.name}</strong></td>
-            <td>${clickablePoint(path + '/enable', ct.status, '', 'Status', isAdmin, true, '', true)}</td>
-            <td>${clickablePoint(path + '/cw_setpoint', ct.cw_supply_temp, currentTempUnit, 'CW Setpoint', isAdmin, true)}</td>
-            <td>${ct.cw_return_temp.toFixed(1)}${currentTempUnit}</td>
-            <td>${ct.cw_flow_gpm.toFixed(0)} ${currentFlowWaterUnit}</td>
-            <td><div class="bar-cell">${clickablePoint(path + '/fan_speed_cmd', ct.fan_speed, '%', 'Fan Speed', isAdmin, true)}<div class="mini-bar"><div class="mini-fill tower" style="width:${ct.fan_speed}%"></div></div></div></td>
-            <td>${ct.wet_bulb_temp.toFixed(1)}${currentTempUnit}</td>
+            <td>${clickablePoint(path + '.status', ct.status, '', 'Status', isAdmin, true, '', true)}</td>
+            <td>${clickablePoint(path + '.cw_supply_temp', ct.cw_supply_temp, currentTempUnit, 'CW Setpoint', isAdmin, false)}</td>
+            <td>${ct.cw_return_temp?.toFixed(1) || '--'}${currentTempUnit}</td>
+            <td>${ct.cw_flow_gpm?.toFixed(0) || '0'} ${currentFlowWaterUnit}</td>
+            <td><div class="bar-cell">${clickablePoint(path + '.fan_speed', ct.fan_speed, '%', 'Fan Speed', isAdmin, true)}<div class="mini-bar"><div class="mini-fill tower" style="width:${ct.fan_speed || 0}%"></div></div></div></td>
+            <td>${ct.wet_bulb_temp?.toFixed(1) || '--'}${currentTempUnit}</td>
         </tr>
     `;
 }
 
 function renderPumpRow(p, isAdmin) {
-    const path = `central_plant/pump_${p.id}`;
+    const path = p.point_path;
     return `
         <tr>
             <td><strong>${p.name}</strong></td>
             <td><span class="tag tag-${p.pump_type?.toLowerCase() || 'default'}">${p.pump_type || 'N/A'}</span></td>
-            <td>${clickablePoint(path + '/enable', p.status, '', 'Status', isAdmin, true, '', true)}</td>
-            <td>${clickablePoint(path + '/speed_cmd', p.speed, '%', 'Speed', isAdmin, true)}</td>
-            <td>${p.flow_gpm.toFixed(0)} ${currentFlowWaterUnit}</td>
+            <td>${clickablePoint(path + '.status', p.status, '', 'Status', isAdmin, true, '', true)}</td>
+            <td>${clickablePoint(path + '.speed', p.speed, '%', 'Speed', isAdmin, true)}</td>
+            <td>${p.flow_gpm?.toFixed(0) || '0'} ${currentFlowWaterUnit}</td>
             <td>${p.head_ft?.toFixed(1) || '--'} ${currentHeadUnit}</td>
-            <td>${p.kw.toFixed(1)}</td>
+            <td>${p.kw?.toFixed(1) || '0'}</td>
         </tr>
     `;
 }
@@ -638,12 +638,12 @@ function renderElectrical(elec) {
 }
 
 function renderSolarRow(s, isAdmin) {
-    const path = `electrical/solar_${s.id}`;
+    const path = s.point_path;
     const pct = s.capacity_kw > 0 ? (s.output_kw / s.capacity_kw * 100) : 0;
     return `
         <tr>
             <td><strong>${s.name}</strong></td>
-            <td><div class="bar-cell">${clickablePoint(path + '/output_kw', s.output_kw, ' kW', 'Output', isAdmin, false)}<div class="mini-bar"><div class="mini-fill solar" style="width:${pct}%"></div></div></div></td>
+            <td><div class="bar-cell">${clickablePoint(path + '.output_kw', s.output_kw, ' kW', 'Output', isAdmin, false)}<div class="mini-bar"><div class="mini-fill solar" style="width:${pct}%"></div></div></div></td>
             <td>${s.capacity_kw} kW</td>
             <td>${s.irradiance_w_m2?.toFixed(0) || '0'} W/m²</td>
             <td>${s.panel_temp?.toFixed(1) || '--'}${currentTempUnit}</td>
@@ -653,26 +653,26 @@ function renderSolarRow(s, isAdmin) {
 }
 
 function renderUPSRow(u, isAdmin) {
-    const path = `electrical/ups_${u.id}`;
+    const path = u.point_path;
     const batteryClass = u.battery_pct < 30 ? 'low' : '';
     return `
         <tr>
             <td><strong>${u.name}</strong></td>
-            <td>${clickablePoint(path + '/status', u.status, '', 'Status', isAdmin, false, '', true)}</td>
+            <td>${clickablePoint(path + '.status', u.status, '', 'Status', isAdmin, true, '', true)}</td>
             <td>${u.capacity_kva} kVA</td>
-            <td><div class="bar-cell"><span>${u.load_pct.toFixed(0)}%</span><div class="mini-bar"><div class="mini-fill" style="width:${u.load_pct}%"></div></div></div></td>
-            <td><div class="bar-cell ${batteryClass}"><span>${u.battery_pct.toFixed(0)}%</span><div class="mini-bar"><div class="mini-fill battery" style="width:${u.battery_pct}%"></div></div></div></td>
+            <td><div class="bar-cell"><span>${u.load_pct?.toFixed(0) || '0'}%</span><div class="mini-bar"><div class="mini-fill" style="width:${u.load_pct || 0}%"></div></div></div></td>
+            <td><div class="bar-cell ${batteryClass}"><span>${u.battery_pct?.toFixed(0) || '0'}%</span><div class="mini-bar"><div class="mini-fill battery" style="width:${u.battery_pct || 0}%"></div></div></div></td>
             <td>${u.battery_runtime_min?.toFixed(0) || '--'} min</td>
         </tr>
     `;
 }
 
 function renderGeneratorRow(g, isAdmin) {
-    const path = `electrical/generator_${g.id}`;
+    const path = g.point_path;
     return `
         <tr>
             <td><strong>${g.name}</strong></td>
-            <td>${clickablePoint(path + '/enable', g.status, '', 'Enable', isAdmin, true, '', true)}</td>
+            <td>${clickablePoint(path + '.status', g.status, '', 'Enable', isAdmin, true, '', true)}</td>
             <td>${g.output_kw?.toFixed(1) || '0'} kW</td>
             <td>${g.capacity_kw} kW</td>
             <td><div class="bar-cell"><span>${g.fuel_level_pct?.toFixed(0) || '--'}%</span><div class="mini-bar"><div class="mini-fill fuel" style="width:${g.fuel_level_pct || 0}%"></div></div></div></td>
@@ -701,10 +701,10 @@ function renderDataCenter(dc) {
         <div class="view-header">
             <h2>${dc.display_name}</h2>
             <div class="view-stats">
-                <div class="stat"><span class="stat-value">${dc.total_it_load_kw.toFixed(0)}</span><span class="stat-label">IT Load kW</span></div>
-                <div class="stat"><span class="stat-value">${dc.total_cooling_kw.toFixed(0)}</span><span class="stat-label">Cooling kW</span></div>
-                <div class="stat"><span class="stat-value">${dc.pue.toFixed(2)}</span><span class="stat-label">PUE</span></div>
-                <div class="stat"><span class="stat-value">${dc.average_inlet_temp.toFixed(0)}${currentTempUnit}</span><span class="stat-label">Avg Inlet</span></div>
+                <div class="stat"><span class="stat-value">${dc.total_it_load_kw?.toFixed(0) || '0'}</span><span class="stat-label">IT Load kW</span></div>
+                <div class="stat"><span class="stat-value">${dc.total_cooling_kw?.toFixed(0) || '0'}</span><span class="stat-label">Cooling kW</span></div>
+                <div class="stat"><span class="stat-value">${dc.pue?.toFixed(2) || '--'}</span><span class="stat-label">PUE</span></div>
+                <div class="stat"><span class="stat-value">${dc.average_inlet_temp?.toFixed(0) || '--'}${currentTempUnit}</span><span class="stat-label">Avg Inlet</span></div>
             </div>
         </div>
         
@@ -734,15 +734,15 @@ function renderDataCenter(dc) {
                 <thead><tr><th>Name</th><th>Status</th><th>Supply</th><th>Return</th><th>Cooling</th><th>Fan</th><th>kW</th></tr></thead>
                 <tbody>
                     ${dc.crac_units.map(c => {
-                        const path = `datacenter/crac_${c.id}`;
+                        const path = c.point_path;
                         return `
                             <tr>
                                 <td><strong>${c.name}</strong></td>
-                                <td>${clickablePoint(path + '/enable', c.status, '', 'Enable', isAdmin, true, '', true)}</td>
-                                <td>${clickablePoint(path + '/supply_air_setpoint', c.supply_air_temp, currentTempUnit, 'Supply Setpoint', isAdmin, true)}</td>
+                                <td>${clickablePoint(path + '.status', c.status, '', 'Enable', isAdmin, true, '', true)}</td>
+                                <td>${clickablePoint(path + '.supply_air_temp', c.supply_air_temp, currentTempUnit, 'Supply Setpoint', isAdmin, true)}</td>
                                 <td>${c.return_air_temp?.toFixed(1) || '--'}${currentTempUnit}</td>
                                 <td>${c.cooling_output_pct?.toFixed(0) || '0'}%</td>
-                                <td><div class="bar-cell">${clickablePoint(path + '/fan_speed_cmd', c.fan_speed_pct, '%', 'Fan Speed', isAdmin, true)}<div class="mini-bar"><div class="mini-fill" style="width:${c.fan_speed_pct || 0}%"></div></div></div></td>
+                                <td><div class="bar-cell">${clickablePoint(path + '.fan_speed_pct', c.fan_speed_pct, '%', 'Fan Speed', isAdmin, true)}<div class="mini-bar"><div class="mini-fill" style="width:${c.fan_speed_pct || 0}%"></div></div></div></td>
                                 <td>${c.kw?.toFixed(1) || '0'}</td>
                             </tr>
                         `;
@@ -775,11 +775,11 @@ function renderWastewater(ww) {
         <div class="view-header">
             <h2>${ww.display_name}</h2>
             <div class="view-stats">
-                <div class="stat"><span class="stat-value">${ww.influent_flow_mgd.toFixed(2)}</span><span class="stat-label">Influent MGD</span></div>
-                <div class="stat"><span class="stat-value">${ww.effluent_flow_mgd.toFixed(2)}</span><span class="stat-label">Effluent MGD</span></div>
-                <div class="stat"><span class="stat-value">${ww.dissolved_oxygen_mg_l.toFixed(1)}</span><span class="stat-label">DO mg/L</span></div>
-                <div class="stat"><span class="stat-value">${ww.ph.toFixed(1)}</span><span class="stat-label">pH</span></div>
-                <div class="stat"><span class="stat-value">${ww.total_kw.toFixed(0)}</span><span class="stat-label">Total kW</span></div>
+                <div class="stat"><span class="stat-value">${ww.influent_flow_mgd?.toFixed(2) || '0'}</span><span class="stat-label">Influent MGD</span></div>
+                <div class="stat"><span class="stat-value">${ww.effluent_flow_mgd?.toFixed(2) || '0'}</span><span class="stat-label">Effluent MGD</span></div>
+                <div class="stat"><span class="stat-value">${ww.dissolved_oxygen_mg_l?.toFixed(1) || '--'}</span><span class="stat-label">DO mg/L</span></div>
+                <div class="stat"><span class="stat-value">${ww.ph?.toFixed(1) || '--'}</span><span class="stat-label">pH</span></div>
+                <div class="stat"><span class="stat-value">${ww.total_kw?.toFixed(0) || '0'}</span><span class="stat-label">Total kW</span></div>
             </div>
         </div>
         
@@ -789,13 +789,13 @@ function renderWastewater(ww) {
                 <thead><tr><th>Name</th><th>Wet Well</th><th>Flow</th><th>Pumps Running</th><th>kW</th></tr></thead>
                 <tbody>
                     ${ww.lift_stations.map(ls => {
-                        const path = `wastewater/liftstation_${ls.id}`;
+                        const path = ls.point_path;
                         return `
                             <tr>
                                 <td><strong>${ls.name}</strong></td>
                                 <td>${ls.wet_well_level_ft?.toFixed(2) || '--'} ${currentHeadUnit}</td>
                                 <td>${ls.flow_gpm?.toFixed(0) || '0'} ${currentFlowWaterUnit}</td>
-                                <td>${clickablePoint(path + '/pumps_cmd', ls.pumps_running, '', 'Pumps Running', isAdmin, true)}</td>
+                                <td>${clickablePoint(path + '.pumps_running', ls.pumps_running, '', 'Pumps Running', isAdmin, false)}</td>
                                 <td>${ls.kw?.toFixed(1) || '0'}</td>
                             </tr>
                         `;
@@ -810,12 +810,12 @@ function renderWastewater(ww) {
                 <thead><tr><th>Name</th><th>Status</th><th>Speed</th><th>Output</th><th>Discharge Temp</th><th>kW</th></tr></thead>
                 <tbody>
                     ${ww.blowers.map(b => {
-                        const path = `wastewater/blower_${b.id}`;
+                        const path = b.point_path;
                         return `
                             <tr>
                                 <td><strong>${b.name}</strong></td>
-                                <td>${clickablePoint(path + '/enable', b.status, '', 'Enable', isAdmin, true, '', true)}</td>
-                                <td><div class="bar-cell">${clickablePoint(path + '/speed_cmd', b.speed_pct, '%', 'Speed', isAdmin, true)}<div class="mini-bar"><div class="mini-fill" style="width:${b.speed_pct || 0}%"></div></div></div></td>
+                                <td>${clickablePoint(path + '.status', b.status, '', 'Enable', isAdmin, true, '', true)}</td>
+                                <td><div class="bar-cell">${clickablePoint(path + '.speed_pct', b.speed_pct, '%', 'Speed', isAdmin, true)}<div class="mini-bar"><div class="mini-fill" style="width:${b.speed_pct || 0}%"></div></div></div></td>
                                 <td>${b.output_scfm?.toFixed(0) || '0'} ${currentFlowAirUnit}</td>
                                 <td>${b.discharge_temp?.toFixed(1) || '--'}${currentTempUnit}</td>
                                 <td>${b.kw?.toFixed(1) || '0'}</td>
@@ -851,12 +851,12 @@ function renderWastewater(ww) {
                 <thead><tr><th>Name</th><th>Status</th><th>Intensity</th><th>Lamp Life</th><th>kW</th><th>E.coli MPN</th></tr></thead>
                 <tbody>
                     ${ww.uv_systems.map(uv => {
-                        const path = `wastewater/uv_${uv.id}`;
+                        const path = uv.point_path;
                         return `
                             <tr>
                                 <td><strong>${uv.name}</strong></td>
-                                <td>${clickablePoint(path + '/enable', uv.status, '', 'Enable', isAdmin, true, '', true)}</td>
-                                <td>${clickablePoint(path + '/intensity_cmd', uv.uv_intensity_pct, '%', 'Intensity', isAdmin, true)}</td>
+                                <td>${clickablePoint(path + '.status', uv.status, '', 'Enable', isAdmin, true, '', true)}</td>
+                                <td>${clickablePoint(path + '.uv_intensity_pct', uv.uv_intensity_pct, '%', 'Intensity', isAdmin, true)}</td>
                                 <td><div class="bar-cell"><span>${uv.lamp_life_remaining_pct?.toFixed(0) || '0'}%</span><div class="mini-bar"><div class="mini-fill" style="width:${uv.lamp_life_remaining_pct || 0}%"></div></div></div></td>
                                 <td>${uv.kw?.toFixed(1) || '0'}</td>
                                 <td>${uv.effluent_ecoli_mpn?.toFixed(0) || '0'}</td>

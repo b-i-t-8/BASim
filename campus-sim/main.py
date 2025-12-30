@@ -8,6 +8,8 @@ Refactored to follow SOLID principles:
 - ISP: Interfaces are segregated (ProtocolServer, Updatable, PointProvider)
 - DIP: High-level orchestrator depends on abstractions
 """
+__version__ = "0.0.2"
+
 import asyncio
 import logging
 import sys
@@ -130,7 +132,7 @@ class PointSynchronizer:
 
         # === DATA CENTER ===
         dc = eng.data_center
-        if dc and dc.enabled:
+        if dc:
             server.update_point("DataCenter_TotalLoad_kW", dc.total_it_load_kw)
             server.update_point("DataCenter_PUE", dc.pue)
             
@@ -144,7 +146,7 @@ class PointSynchronizer:
 
         # === WASTEWATER ===
         ww = eng.wastewater_facility
-        if ww and ww.enabled:
+        if ww:
             server.update_point("Wastewater_InfluentFlow", ww.influent_flow_mgd)
             server.update_point("Wastewater_EffluentFlow", ww.effluent_flow_mgd)
             server.update_point("Wastewater_DO", ww.dissolved_oxygen_mg_l)
