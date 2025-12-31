@@ -13,7 +13,7 @@ from flask_cors import CORS
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 
-from model import CampusEngine, get_simulation_parameters
+from models import CampusEngine, get_simulation_parameters
 
 logger = logging.getLogger("WebGUI")
 
@@ -787,13 +787,56 @@ def create_app(engine: CampusEngine) -> Flask:
         return decorated
     
     @app.route('/admin')
+    @app.route('/admin/')
     @login_required
     def admin_page():
+        """Redirect to config page."""
+        return redirect(url_for('admin_config'))
+
+    @app.route('/admin/config')
+    @login_required
+    def admin_config():
         """Render admin configuration page."""
         if current_user.role != 'admin':
             flash('Admin access required', 'error')
             return redirect(url_for('index'))
-        return render_template('admin.html', user=current_user)
+        return render_template('admin.html', user=current_user, active_page='config')
+
+    @app.route('/admin/simulation')
+    @login_required
+    def admin_simulation():
+        """Render admin simulation parameters page."""
+        if current_user.role != 'admin':
+            flash('Admin access required', 'error')
+            return redirect(url_for('index'))
+        return render_template('admin.html', user=current_user, active_page='simulation')
+
+    @app.route('/admin/profiles')
+    @login_required
+    def admin_profiles():
+        """Render admin device profiles page."""
+        if current_user.role != 'admin':
+            flash('Admin access required', 'error')
+            return redirect(url_for('index'))
+        return render_template('admin.html', user=current_user, active_page='profiles')
+
+    @app.route('/admin/profiles/<profile_id>')
+    @login_required
+    def admin_profile_detail(profile_id):
+        """Render admin device profiles page with specific profile selected."""
+        if current_user.role != 'admin':
+            flash('Admin access required', 'error')
+            return redirect(url_for('index'))
+            
+        # Resolve profile ID case-insensitively
+        from profiles import PROFILES
+        resolved_id = profile_id
+        for pid in PROFILES.keys():
+            if pid.lower() == profile_id.lower():
+                resolved_id = pid
+                break
+                
+        return render_template('admin.html', user=current_user, active_page='profiles', active_profile=resolved_id)
     
     @app.route('/api/admin/config', methods=['GET'])
     @admin_required
@@ -935,7 +978,7 @@ def create_app(engine: CampusEngine) -> Flask:
         }
         
         # Get current overrides
-        from model import get_override_manager, get_simulation_parameters
+        from models import get_override_manager, get_simulation_parameters
         manager = get_override_manager()
         overrides = manager.get_all_overrides()
         export_data['overrides'] = overrides
@@ -992,7 +1035,7 @@ def create_app(engine: CampusEngine) -> Flask:
             )
             
             # Restore overrides
-            from model import get_override_manager, get_simulation_parameters
+            from models import get_override_manager, get_simulation_parameters
             manager = get_override_manager()
             
             override_count = 0
@@ -1031,7 +1074,7 @@ def create_app(engine: CampusEngine) -> Flask:
     @admin_required
     def get_simulation_params():
         """Get all simulation parameters with current values and metadata."""
-        from model import get_simulation_parameters
+        from models import get_simulation_parameters
         params = get_simulation_parameters()
         return jsonify({
             'parameters': params.get_all(),
@@ -1042,7 +1085,7 @@ def create_app(engine: CampusEngine) -> Flask:
     @admin_required
     def update_simulation_params():
         """Update simulation parameters."""
-        from model import get_simulation_parameters
+        from models import get_simulation_parameters
         data = request.get_json()
         
         if not data:
@@ -1098,7 +1141,7 @@ def create_app(engine: CampusEngine) -> Flask:
     @admin_required
     def reset_simulation_params():
         """Reset simulation parameters to defaults."""
-        from model import get_simulation_parameters
+        from models import get_simulation_parameters
         data = request.get_json() or {}
         key = data.get('key')  # Optional: reset specific key
         
@@ -1114,6 +1157,187 @@ def create_app(engine: CampusEngine) -> Flask:
             'success': True,
             'parameters': params.get_all()
         })
+
+    @app.route('/api/admin/profiles', methods=['GET'])
+    @login_required
+    def get_profiles():
+        """Get available controller profiles."""
+        logger.info(f"API Request: get_profiles by {current_user.username}")
+        from profiles import PROFILES
+        # Convert to list of dicts for JSON
+        profiles_list = []
+        for key, p in PROFILES.items():
+            profiles_list.append({
+                'id': key,
+                'name': p.name,
+                'manufacturer': p.manufacturer,
+                'description': p.description,
+                'naming_convention': p.naming_convention,
+                'device_types': p.device_types or {},
+                'config_file': p.config_file,
+                'protocols': p.protocols
+            })
+        
+        # Sort alphabetically by name
+        profiles_list.sort(key=lambda x: x['name'])
+        
+        logger.info(f"Returning {len(profiles_list)} profiles. First: {profiles_list[0]['name']} with {len(profiles_list[0]['device_types'])} device types")
+        return jsonify(profiles_list)
+
+    @app.route('/api/admin/profiles/<profile_id>', methods=['POST'])
+    @login_required
+    def update_profile(profile_id):
+        """Update profile metadata (description, protocols)."""
+        from profiles import PROFILES, save_profile
+        
+        if profile_id not in PROFILES:
+            return jsonify({'error': 'Profile not found'}), 404
+            
+        profile = PROFILES[profile_id]
+        data = request.get_json()
+        
+        if 'description' in data:
+            profile.description = data['description']
+            
+        if 'protocols' in data:
+            profile.protocols = data['protocols']
+            
+        if save_profile(profile):
+            return jsonify({'success': True, 'message': f'Updated {profile.name}'})
+        else:
+            return jsonify({'error': 'Failed to save profile'}), 500
+
+    @app.route('/api/admin/profiles/<profile_id>/device-types', methods=['POST'])
+    @login_required
+    def add_device_type(profile_id):
+        """Add a new device type to a profile."""
+        from profiles import PROFILES, save_profile
+        
+        if profile_id not in PROFILES:
+            return jsonify({'error': 'Profile not found'}), 404
+            
+        data = request.get_json()
+        device_type = data.get('device_type')
+        description = data.get('description', '')
+        
+        if not device_type:
+            return jsonify({'error': 'Device type name is required'}), 400
+            
+        profile = PROFILES[profile_id]
+        
+        if device_type in profile.device_types:
+            return jsonify({'error': 'Device type already exists'}), 400
+            
+        # Initialize new device type structure
+        profile.device_types[device_type] = {
+            'description': description,
+            'defaults': {},
+            'points': {}
+        }
+        
+        if save_profile(profile):
+            return jsonify({'success': True, 'message': f'Added {device_type} to {profile.name}'})
+        else:
+            return jsonify({'error': 'Failed to save profile'}), 500
+
+    @app.route('/api/admin/profiles/<profile_id>/device-types/<device_type_id>', methods=['PUT'])
+    @login_required
+    def update_device_type(profile_id, device_type_id):
+        """Update an existing device type in a profile."""
+        from profiles import PROFILES, save_profile
+        
+        if profile_id not in PROFILES:
+            return jsonify({'error': 'Profile not found'}), 404
+            
+        profile = PROFILES[profile_id]
+        
+        if device_type_id not in profile.device_types:
+            return jsonify({'error': 'Device type not found'}), 404
+            
+        data = request.get_json()
+        description = data.get('description')
+        points = data.get('points')
+        
+        if description is not None:
+            profile.device_types[device_type_id]['description'] = description
+            
+        if points is not None:
+            # Validate points structure if necessary
+            profile.device_types[device_type_id]['points'] = points
+            
+        if save_profile(profile):
+            return jsonify({'success': True, 'message': f'Updated {device_type_id} in {profile.name}'})
+        else:
+            return jsonify({'error': 'Failed to save profile'}), 500
+
+    @app.route('/api/admin/profiles/<profile_id>/yaml', methods=['GET'])
+    @login_required
+    def get_profile_yaml(profile_id):
+        """Get raw YAML content for a profile."""
+        from profiles import PROFILES
+        import os
+        
+        if profile_id not in PROFILES:
+            return jsonify({'error': 'Profile not found'}), 404
+            
+        profile = PROFILES[profile_id]
+        
+        # Construct full path
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        config_path = os.path.join(base_dir, 'profiles', profile.config_file)
+        
+        if not profile.config_file or not os.path.exists(config_path):
+            return jsonify({'error': 'Config file not found'}), 404
+            
+        try:
+            with open(config_path, 'r') as f:
+                content = f.read()
+            return jsonify({'yaml': content})
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
+    @app.route('/api/admin/profiles/<profile_id>/yaml', methods=['POST'])
+    @login_required
+    def save_profile_yaml(profile_id):
+        """Save raw YAML content for a profile."""
+        from profiles import PROFILES, load_profiles
+        import os
+        import yaml
+        
+        if profile_id not in PROFILES:
+            return jsonify({'error': 'Profile not found'}), 404
+            
+        profile = PROFILES[profile_id]
+        if not profile.config_file:
+            return jsonify({'error': 'No config file associated with this profile'}), 400
+            
+        # Construct full path
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        config_path = os.path.join(base_dir, 'profiles', profile.config_file)
+            
+        data = request.get_json()
+        content = data.get('yaml')
+        
+        if content is None:
+            return jsonify({'error': 'No content provided'}), 400
+            
+        # Validate YAML
+        try:
+            yaml.safe_load(content)
+        except yaml.YAMLError as e:
+            return jsonify({'error': f'Invalid YAML: {str(e)}'}), 400
+            
+        try:
+            with open(config_path, 'w') as f:
+                f.write(content)
+            
+            # Reload profiles to apply changes
+            load_profiles()
+            
+            return jsonify({'success': True, 'message': 'Profile updated successfully'})
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
     
     # --- Override Management API ---
     
@@ -1121,7 +1345,7 @@ def create_app(engine: CampusEngine) -> Flask:
     @api_login_required
     def get_overrides():
         """Get all active overrides."""
-        from model import get_override_manager
+        from models import get_override_manager
         manager = get_override_manager()
         overrides = manager.get_all_overrides()
         return jsonify({
@@ -1143,7 +1367,7 @@ def create_app(engine: CampusEngine) -> Flask:
             "duration_seconds": 3600  // optional, null for permanent
         }
         """
-        from model import get_override_manager
+        from models import get_override_manager
         
         data = request.get_json()
         if not data:
@@ -1213,7 +1437,7 @@ def create_app(engine: CampusEngine) -> Flask:
             "priority": 8  // optional, null to release all priorities
         }
         """
-        from model import get_override_manager
+        from models import get_override_manager
         
         data = request.get_json()
         if not data:
@@ -1251,7 +1475,7 @@ def create_app(engine: CampusEngine) -> Flask:
     @api_login_required
     def get_override_info(point_path):
         """Get detailed override info for a specific point."""
-        from model import get_override_manager
+        from models import get_override_manager
         manager = get_override_manager()
         info = manager.get_point_override_info(point_path)
         

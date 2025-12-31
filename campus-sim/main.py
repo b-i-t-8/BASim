@@ -8,7 +8,7 @@ Refactored to follow SOLID principles:
 - ISP: Interfaces are segregated (ProtocolServer, Updatable, PointProvider)
 - DIP: High-level orchestrator depends on abstractions
 """
-__version__ = "0.0.2"
+__version__ = "0.0.3"
 
 import asyncio
 import logging
@@ -19,7 +19,7 @@ from typing import List
 # Add web module to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'web'))
 
-from model import CampusEngine, get_simulation_parameters
+from models import CampusEngine, get_simulation_parameters
 from servers import ModbusServer, BACnetServer, BACnetSCHub
 from interfaces import ProtocolServer
 from web.app import WebServer
@@ -359,7 +359,7 @@ class CampusSimulator:
 
 def create_override_callback(engine):
     """Create an override callback that applies overrides to the engine."""
-    from model import get_override_manager
+    from models import get_override_manager
     
     def apply_override(point_path: str, value: float, priority: int = 8):
         """Apply an override via the override manager."""

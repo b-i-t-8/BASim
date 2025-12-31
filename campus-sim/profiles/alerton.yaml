@@ -1,0 +1,76 @@
+name: Alerton
+manufacturer: Alerton
+description: Alerton Compass/Ascent based controllers
+naming_convention: PascalCase
+device_types:
+  VAV:
+    description: "Variable Air Volume Box"
+    defaults:
+      occupancy_mode: "Occupied"
+      cooling_setpoint: 74.0
+      heating_setpoint: 70.0
+      airflow_min: 100
+      airflow_max: 1000
+    points:
+      AV-1:
+        name: OccupancyMode
+        description: Occupancy Mode Enum
+      AV-2:
+        name: EffectiveSetpoint
+        description: Effective Setpoint
+      AV-3:
+        name: RoomTemp
+        description: Room Temperature
+      AV-4:
+        name: AirflowSetpt
+        description: Airflow Setpoint
+  AHU:
+    description: "Air Handling Unit"
+    defaults:
+      supply_temp_setpoint: 55.0
+      duct_static_setpoint: 1.5
+    points:
+      AV-10:
+        name: SupplyTemp
+        description: Supply Air Temperature
+      AV-11:
+        name: SupplyTempSetpt
+        description: Supply Air Temperature Setpoint
+      AV-12:
+        name: DuctStatic
+        description: Duct Static Pressure
+  FCU:
+    description: "Fan Coil Unit"
+    defaults:
+      cooling_setpoint: 74.0
+      heating_setpoint: 70.0
+    points:
+      AV-20:
+        name: RoomTemp
+        description: Room Temperature
+      AV-21:
+        name: RoomSetpoint
+        description: Room Setpoint
+      BV-10:
+        name: FanStatus
+        description: Fan Status
+      AV-22:
+        name: ValveCmd
+        description: Valve Command
+  RTU:
+    description: "Roof Top Unit"
+    defaults:
+      supply_temp_setpoint: 55.0
+    points:
+      AV-30:
+        name: SupplyTemp
+        description: Supply Air Temperature
+      AV-31:
+        name: ReturnTemp
+        description: Return Air Temperature
+      BV-20:
+        name: FanCmd
+        description: Fan Command
+      BV-21:
+        name: CoolStage1
+        description: Cooling Stage 1

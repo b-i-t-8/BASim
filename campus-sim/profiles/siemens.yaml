@@ -1,0 +1,67 @@
+name: Siemens
+manufacturer: Siemens
+description: Siemens Desigo / Apogee
+naming_convention: PascalCase
+device_types:
+  VAV:
+    description: "Variable Air Volume Box"
+    defaults:
+      occupancy_mode: "Occupied"
+      cooling_setpoint: 74.0
+      heating_setpoint: 70.0
+    points:
+      AV-1:
+        name: RM_T
+        description: Room Temperature
+      AV-2:
+        name: RM_STPT
+        description: Room Setpoint
+      BV-1:
+        name: OCC_CMD
+        description: Occupancy Command
+  AHU:
+    description: "Air Handling Unit"
+    defaults:
+      supply_temp_setpoint: 55.0
+    points:
+      AV-10:
+        name: SA_T
+        description: Supply Air Temperature
+      AV-11:
+        name: SA_STPT
+        description: Supply Air Setpoint
+  FCU:
+    description: "Fan Coil Unit"
+    defaults:
+      cooling_setpoint: 74.0
+      heating_setpoint: 70.0
+    points:
+      AV-20:
+        name: RM_T
+        description: Room Temperature
+      AV-21:
+        name: RM_STPT
+        description: Room Setpoint
+      BV-10:
+        name: FAN_S
+        description: Fan Status
+      AV-22:
+        name: VLV_CMD
+        description: Valve Command
+  RTU:
+    description: "Roof Top Unit"
+    defaults:
+      supply_temp_setpoint: 55.0
+    points:
+      AV-30:
+        name: SA_T
+        description: Supply Air Temperature
+      AV-31:
+        name: RA_T
+        description: Return Air Temperature
+      BV-20:
+        name: FAN_C
+        description: Fan Command
+      BV-21:
+        name: CLG_1
+        description: Cooling Stage 1

@@ -7,7 +7,7 @@ from typing import Any
 import logging
 
 from servers import ModbusServer, BACnetServer
-from model import CampusEngine
+from models import CampusEngine
 from interfaces import PointMetadataProvider
 
 logger = logging.getLogger("Registrars")

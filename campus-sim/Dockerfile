@@ -26,10 +26,12 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
-COPY model.py .
+COPY models/ ./models/
 COPY main.py .
 COPY interfaces.py .
 COPY servers.py .
+COPY profiles/ ./profiles/
+COPY profiles.py .
 COPY web/ ./web/
 COPY Caddyfile /etc/caddy/Caddyfile
 

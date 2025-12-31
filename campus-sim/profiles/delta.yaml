@@ -1,0 +1,71 @@
+name: Delta
+manufacturer: Delta Controls
+description: Delta enteliBUS/enteliZON controllers
+naming_convention: camelCase
+device_types:
+  VAV:
+    description: Variable Air Volume Box
+    defaults:
+      occupancy_mode: Occupied
+      cooling_setpoint: 74.0
+      heating_setpoint: 70.0
+    points:
+      BV-1:
+        name: netSensorStatus
+        description: Network Sensor Status
+      AV-1:
+        name: activeSetpoint
+        description: Active Setpoint
+      AV-2:
+        name: spaceTemp
+        description: Space Temperature
+  AHU:
+    description: Air Handling Unit
+    defaults:
+      supply_temp_setpoint: 55.0
+    points:
+      AV-10:
+        name: supplyAirTemp
+        description: Supply Air Temperature
+      AV-11:
+        name: supplyAirSetpoint
+        description: Supply Air Setpoint
+  FCU:
+    description: Fan Coil Unit
+    defaults:
+      cooling_setpoint: 74.0
+      heating_setpoint: 70.0
+    points:
+      AV-20:
+        name: roomTemp
+        description: Room Temperature
+      AV-21:
+        name: roomSetpoint
+        description: Room Setpoint
+      BV-10:
+        name: fanStatus
+        description: Fan Status
+      AV-22:
+        name: valveCmd
+        description: Valve Command
+  RTU:
+    description: Roof Top Unit
+    defaults:
+      supply_temp_setpoint: 55.0
+    points:
+      AV-30:
+        name: supplyTemp
+        description: Supply Air Temperature
+      AV-31:
+        name: returnTemp
+        description: Return Air Temperature
+      BV-20:
+        name: fanCmd
+        description: Fan Command
+      BV-21:
+        name: coolStage1
+        description: Cooling Stage 1
+  R:
+    description: R
+    defaults: {}
+    points: {}

@@ -1,0 +1,64 @@
+name: Distech
+manufacturer: Distech Controls
+description: Distech Eclypse series
+naming_convention: camelCase
+device_types:
+  VAV:
+    description: "Variable Air Volume Box"
+    defaults:
+      occupancy_mode: "Occupied"
+      cooling_setpoint: 74.0
+      heating_setpoint: 70.0
+    points:
+      AV-99:
+        name: nciSetpoint
+        description: Network Configuration Input
+      AV-100:
+        name: nvoSpaceTemp
+        description: Network Variable Output
+  AHU:
+    description: "Air Handling Unit"
+    defaults:
+      supply_temp_setpoint: 55.0
+    points:
+      AV-10:
+        name: nvoSupplyTemp
+        description: Supply Air Temperature
+      AV-11:
+        name: nciSupplySetpt
+        description: Supply Air Setpoint
+  FCU:
+    description: "Fan Coil Unit"
+    defaults:
+      cooling_setpoint: 74.0
+      heating_setpoint: 70.0
+    points:
+      AV-110:
+        name: nvoRoomTemp
+        description: Room Temperature
+      AV-111:
+        name: nciSetpoint
+        description: Room Setpoint
+      BV-10:
+        name: nvoFanStatus
+        description: Fan Status
+      AV-112:
+        name: nvoValveCmd
+        description: Valve Command
+  RTU:
+    description: "Roof Top Unit"
+    defaults:
+      supply_temp_setpoint: 55.0
+    points:
+      AV-120:
+        name: nvoSupplyTemp
+        description: Supply Air Temperature
+      AV-121:
+        name: nvoReturnTemp
+        description: Return Air Temperature
+      BV-20:
+        name: nvoFanCmd
+        description: Fan Command
+      BV-21:
+        name: nvoCoolStage1
+        description: Cooling Stage 1

@@ -1,0 +1,64 @@
+name: JCI
+manufacturer: Johnson Controls
+description: Metasys FEC/FAC controllers
+naming_convention: PascalCase
+device_types:
+  VAV:
+    description: "Variable Air Volume Box"
+    defaults:
+      occupancy_mode: "Occupied"
+      cooling_setpoint: 74.0
+      heating_setpoint: 70.0
+    points:
+      AV-3001:
+        name: ZN-T
+        description: Zone Temperature
+      AV-3002:
+        name: ZN-SP
+        description: Zone Setpoint
+  AHU:
+    description: "Air Handling Unit"
+    defaults:
+      supply_temp_setpoint: 55.0
+    points:
+      AV-3010:
+        name: SA-T
+        description: Supply Air Temperature
+      AV-3011:
+        name: SA-SP
+        description: Supply Air Setpoint
+  FCU:
+    description: "Fan Coil Unit"
+    defaults:
+      cooling_setpoint: 74.0
+      heating_setpoint: 70.0
+    points:
+      AV-3020:
+        name: ZN-T
+        description: Zone Temperature
+      AV-3021:
+        name: ZN-SP
+        description: Zone Setpoint
+      BV-3001:
+        name: SF-S
+        description: Supply Fan Status
+      AV-3022:
+        name: VLV-O
+        description: Valve Output
+  RTU:
+    description: "Roof Top Unit"
+    defaults:
+      supply_temp_setpoint: 55.0
+    points:
+      AV-3030:
+        name: SA-T
+        description: Supply Air Temperature
+      AV-3031:
+        name: RA-T
+        description: Return Air Temperature
+      BV-3010:
+        name: SF-C
+        description: Supply Fan Command
+      BV-3011:
+        name: CLG-1
+        description: Cooling Stage 1

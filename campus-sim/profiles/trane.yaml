@@ -1,0 +1,67 @@
+name: Trane
+manufacturer: Trane
+description: Trane Tracer SC/UC controllers
+naming_convention: camelCase
+device_types:
+  VAV:
+    description: "Variable Air Volume Box"
+    defaults:
+      occupancy_mode: "Occupied"
+      cooling_setpoint: 74.0
+      heating_setpoint: 70.0
+    points:
+      AV-1:
+        name: spaceTemp
+        description: Space Temperature
+      AV-2:
+        name: activeSetpoint
+        description: Active Setpoint
+      BV-1:
+        name: occupancyStatus
+        description: Occupancy Status
+  AHU:
+    description: "Air Handling Unit"
+    defaults:
+      supply_temp_setpoint: 55.0
+    points:
+      AV-10:
+        name: supplyAirTemp
+        description: Supply Air Temperature
+      AV-11:
+        name: supplyAirSetpoint
+        description: Supply Air Setpoint
+  FCU:
+    description: "Fan Coil Unit"
+    defaults:
+      cooling_setpoint: 74.0
+      heating_setpoint: 70.0
+    points:
+      AV-20:
+        name: spaceTemp
+        description: Space Temperature
+      AV-21:
+        name: activeSetpoint
+        description: Active Setpoint
+      BV-10:
+        name: fanStatus
+        description: Fan Status
+      AV-22:
+        name: valvePosition
+        description: Valve Position
+  RTU:
+    description: "Roof Top Unit"
+    defaults:
+      supply_temp_setpoint: 55.0
+    points:
+      AV-30:
+        name: supplyAirTemp
+        description: Supply Air Temperature
+      AV-31:
+        name: returnAirTemp
+        description: Return Air Temperature
+      BV-20:
+        name: fanCommand
+        description: Fan Command
+      BV-21:
+        name: coolStage1
+        description: Cooling Stage 1
