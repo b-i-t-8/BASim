@@ -1350,3 +1350,10 @@ tr.unocc td:first-child::after {
     background: var(--warning);
     color: #000;
 }
+
+.admin-link.active {
+    background: var(--primary);
+    color: var(--bg);
+    border-color: var(--primary);
+    font-weight: bold;
+}
