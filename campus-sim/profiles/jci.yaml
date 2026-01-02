@@ -2,63 +2,312 @@ name: JCI
 manufacturer: Johnson Controls
 description: Metasys FEC/FAC controllers
 naming_convention: PascalCase
-device_types:
-  VAV:
-    description: "Variable Air Volume Box"
-    defaults:
-      occupancy_mode: "Occupied"
-      cooling_setpoint: 74.0
-      heating_setpoint: 70.0
+device_definitions:
+  VAV_CoolingOnly:
+    category: VAV
+    controller_model: FEC2611
+    description: Cooling Only VAV
     points:
-      AV-3001:
-        name: ZN-T
+      ZN-T:
         description: Zone Temperature
-      AV-3002:
-        name: ZN-SP
+        address: AV-3001
+      ZN-SP:
         description: Zone Setpoint
-  AHU:
-    description: "Air Handling Unit"
-    defaults:
-      supply_temp_setpoint: 55.0
+        address: AV-3002
+      SA-F:
+        description: Supply Air Flow
+        address: AV-3003
+      DMPr-O:
+        description: Damper Output
+        address: AV-3004
+      OccupancyMode:
+        description: Occupancy Mode
+        writable: true
+        value: Occupied
+      CoolingSetpoint:
+        description: Cooling Setpoint
+        writable: true
+        value: 74.0
+        mapping: cooling_setpoint
+      HeatingSetpoint:
+        description: Heating Setpoint
+        writable: true
+        value: 70.0
+        mapping: heating_setpoint
+  VAV_Reheat:
+    category: VAV
+    controller_model: FEC2611
+    description: VAV with Reheat
     points:
-      AV-3010:
-        name: SA-T
-        description: Supply Air Temperature
-      AV-3011:
-        name: SA-SP
-        description: Supply Air Setpoint
-  FCU:
-    description: "Fan Coil Unit"
-    defaults:
-      cooling_setpoint: 74.0
-      heating_setpoint: 70.0
-    points:
-      AV-3020:
-        name: ZN-T
+      ZN-T:
         description: Zone Temperature
-      AV-3021:
-        name: ZN-SP
+        address: AV-3001
+      ZN-SP:
         description: Zone Setpoint
-      BV-3001:
-        name: SF-S
+        address: AV-3002
+      SA-F:
+        description: Supply Air Flow
+        address: AV-3003
+      DMPr-O:
+        description: Damper Output
+        address: AV-3004
+      DA-T:
+        description: Discharge Air Temperature
+        address: AV-3005
+      VLV-O:
+        description: Reheat Valve Output
+        address: AV-3006
+      OccupancyMode:
+        description: Occupancy Mode
+        writable: true
+        value: Occupied
+      CoolingSetpoint:
+        description: Cooling Setpoint
+        writable: true
+        value: 74.0
+        mapping: cooling_setpoint
+      HeatingSetpoint:
+        description: Heating Setpoint
+        writable: true
+        value: 70.0
+        mapping: heating_setpoint
+  VAV_FanPowered:
+    category: VAV
+    controller_model: FEC2611
+    description: Fan Powered VAV
+    points:
+      ZN-T:
+        description: Zone Temperature
+        address: AV-3001
+      ZN-SP:
+        description: Zone Setpoint
+        address: AV-3002
+      SA-F:
+        description: Supply Air Flow
+        address: AV-3003
+      DMPr-O:
+        description: Damper Output
+        address: AV-3004
+      DA-T:
+        description: Discharge Air Temperature
+        address: AV-3005
+      VLV-O:
+        description: Reheat Valve Output
+        address: AV-3006
+      SF-S:
         description: Supply Fan Status
-      AV-3022:
-        name: VLV-O
-        description: Valve Output
-  RTU:
-    description: "Roof Top Unit"
-    defaults:
-      supply_temp_setpoint: 55.0
-    points:
-      AV-3030:
-        name: SA-T
-        description: Supply Air Temperature
-      AV-3031:
-        name: RA-T
-        description: Return Air Temperature
-      BV-3010:
-        name: SF-C
+        address: BV-3001
+      SF-C:
         description: Supply Fan Command
-      BV-3011:
-        name: CLG-1
+        address: BV-3002
+      OccupancyMode:
+        description: Occupancy Mode
+        writable: true
+        value: Occupied
+      CoolingSetpoint:
+        description: Cooling Setpoint
+        writable: true
+        value: 74.0
+        mapping: cooling_setpoint
+      HeatingSetpoint:
+        description: Heating Setpoint
+        writable: true
+        value: 70.0
+        mapping: heating_setpoint
+  AHU_VAV:
+    category: AHU
+    controller_model: FAC2511
+    description: VAV Air Handling Unit
+    points:
+      SA-T:
+        description: Supply Air Temperature
+        address: AV-3010
+      SA-SP:
+        description: Supply Air Setpoint
+        address: AV-3011
+      RA-T:
+        description: Return Air Temperature
+        address: AV-3012
+      MA-T:
+        description: Mixed Air Temperature
+        address: AV-3013
+      SA-P:
+        description: Supply Air Static Pressure
+        address: AV-3014
+      SA-PSP:
+        description: Static Pressure Setpoint
+        address: AV-3015
+      SF-O:
+        description: Supply Fan Speed Output
+        address: AV-3016
+      SF-S:
+        description: Supply Fan Status
+        address: BV-3010
+      FLT-S:
+        description: Filter Status
+        address: BV-3011
+      SupplyTempSetpoint:
+        description: Supply Temp Setpoint
+        writable: true
+        value: 55.0
+        mapping: supply_temp_setpoint
+      StaticPressureSetpoint:
+        description: Static Pressure Setpoint
+        writable: true
+        value: 1.5
+        mapping: static_pressure_setpoint
+  AHU_CAV:
+    category: AHU
+    controller_model: FAC2511
+    description: Constant Air Volume AHU
+    points:
+      SA-T:
+        description: Supply Air Temperature
+        address: AV-3010
+      SA-SP:
+        description: Supply Air Setpoint
+        address: AV-3011
+      RA-T:
+        description: Return Air Temperature
+        address: AV-3012
+      SF-S:
+        description: Supply Fan Status
+        address: BV-3010
+      SF-C:
+        description: Supply Fan Command
+        address: BV-3012
+      CLG-1:
         description: Cooling Stage 1
+        address: BV-3013
+      HTG-1:
+        description: Heating Stage 1
+        address: BV-3014
+      SupplyTempSetpoint:
+        description: Supply Temp Setpoint
+        writable: true
+        value: 55.0
+        mapping: supply_temp_setpoint
+  FCU:
+    category: FCU
+    controller_model: FEC2611
+    description: Fan Coil Unit
+    points:
+      ZN-T:
+        description: Zone Temperature
+        address: AV-3020
+      ZN-SP:
+        description: Zone Setpoint
+        address: AV-3021
+      SF-S:
+        description: Supply Fan Status
+        address: BV-3001
+      VLV-O:
+        description: Valve Output
+        address: AV-3022
+      CoolingSetpoint:
+        description: Cooling Setpoint
+        writable: true
+        value: 74.0
+        mapping: cooling_setpoint
+      HeatingSetpoint:
+        description: Heating Setpoint
+        writable: true
+        value: 70.0
+        mapping: heating_setpoint
+  RTU:
+    category: RTU
+    controller_model: FEC2611
+    description: Roof Top Unit
+    points:
+      SA-T:
+        description: Supply Air Temperature
+        address: AV-3030
+      RA-T:
+        description: Return Air Temperature
+        address: AV-3031
+      SF-C:
+        description: Supply Fan Command
+        address: BV-3010
+      CLG-1:
+        description: Cooling Stage 1
+        address: BV-3011
+      SupplyTempSetpoint:
+        description: Supply Temp Setpoint
+        writable: true
+        value: 55.0
+        mapping: supply_temp_setpoint
+  ChillerPlant:
+    category: Plant
+    controller_model: FAC2511
+    description: Chiller Plant Controller
+    points:
+      CHW-S:
+        description: System Supply Temp
+        address: AV-3100
+      CHW-R:
+        description: System Return Temp
+        address: AV-3101
+      SYS-F:
+        description: System Flow
+        address: AV-3102
+      SYS-P:
+        description: System Pressure
+        address: AV-3103
+      SYS-PSP:
+        description: System Pressure Setpoint
+        address: AV-3104
+      PLT-EN:
+        description: Plant Enable
+        address: BV-3100
+      CH-1-EN:
+        description: Chiller 1 Enable
+        address: BV-3101
+      CH-2-EN:
+        description: Chiller 2 Enable
+        address: BV-3102
+  BoilerPlant:
+    category: Plant
+    controller_model: FAC2511
+    description: Boiler Plant Controller
+    points:
+      HW-S:
+        description: System Supply Temp
+        address: AV-3200
+      HW-R:
+        description: System Return Temp
+        address: AV-3201
+      SYS-F:
+        description: System Flow
+        address: AV-3202
+      PLT-EN:
+        description: Plant Enable
+        address: BV-3200
+      BLR-1-EN:
+        description: Boiler 1 Enable
+        address: BV-3201
+      BLR-2-EN:
+        description: Boiler 2 Enable
+        address: BV-3202
+  Gateway:
+    category: Gateway
+    controller_model: NAE55
+    description: "Network Gateway"
+    protocol: "BACnet IP"
+    ports:
+      - name: "IP_Interface"
+        type: "BACnet/IP"
+        network_number: 100
+        port: 47808
+      - name: "MSTP_Port_1"
+        type: "MS/TP"
+        network_number: 2001
+        baud_rate: 38400
+        mac_address: 1
+        max_master: 127
+        max_info_frames: 1
+    points:
+      Device_Status:
+        description: "Device Status"
+        writable: false
+        value: 1
+        address: AV-100

@@ -31,17 +31,42 @@ class ModbusRegistrar(ProtocolRegistrar):
         # ... (rest of logic) ...
 
         
-        # === BUILDINGS (VFDs Only) ===
+        # === BUILDINGS ===
         for bldg in eng.buildings:
             for ahu in bldg.ahus:
-                prefix = f"{bldg.name}_{ahu.name}"
+                # Check protocol - register if Modbus
+                is_modbus = hasattr(ahu, 'protocol') and 'Modbus' in ahu.protocol
                 
-                # Only VFD related points for AHUs
-                server.register_point(f"{prefix}_FanSpeed", ahu.fan_speed, writable=True)
-                server.register_point(f"{prefix}_FanStatus", float(ahu.fan_status))
-                server.register_point(f"{prefix}_Enable", float(ahu.fan_status), writable=True)
+                # If explicitly Modbus, register all points
+                if is_modbus:
+                    prefix = f"{bldg.name}_{ahu.name}"
+                    if hasattr(ahu, 'get_point_definitions') and hasattr(ahu, 'get_points'):
+                        points_def = ahu.get_point_definitions()
+                        points_val = ahu.get_points()
+                        for p_def in points_def:
+                            val = 0.0
+                            if p_def.internal_key and p_def.internal_key in points_val:
+                                val = points_val[p_def.internal_key]
+                            server.register_point(f"{prefix}_{p_def.name}", val, writable=p_def.writable)
+                else:
+                    # Legacy/Default behavior: Only VFD related points for AHUs (assuming VFD is Modbus)
+                    prefix = f"{bldg.name}_{ahu.name}"
+                    server.register_point(f"{prefix}_FanSpeed", ahu.fan_speed, writable=True)
+                    server.register_point(f"{prefix}_FanStatus", float(ahu.fan_status))
+                    server.register_point(f"{prefix}_Enable", float(ahu.fan_status), writable=True)
                 
-                # No VAVs in Modbus (typically BACnet/MSTP)
+                # VAVs
+                for vav in ahu.vavs:
+                    if hasattr(vav, 'protocol') and 'Modbus' in vav.protocol:
+                        prefix = f"{bldg.name}_{ahu.name}_{vav.name}"
+                        if hasattr(vav, 'get_point_definitions') and hasattr(vav, 'get_points'):
+                            points_def = vav.get_point_definitions()
+                            points_val = vav.get_points()
+                            for p_def in points_def:
+                                val = 0.0
+                                if p_def.internal_key and p_def.internal_key in points_val:
+                                    val = points_val[p_def.internal_key]
+                                server.register_point(f"{prefix}_{p_def.name}", val, writable=p_def.writable)
 
         # === CENTRAL PLANT (Industrial/VFDs) ===
         plant = eng.central_plant
@@ -163,6 +188,10 @@ class BACnetRegistrar(ProtocolRegistrar):
             for ahu in bldg.ahus:
                 ahu_path = f"{bldg_path}/ahu_{ahu.id}"
                 
+                # Check protocol - only register if BACnet
+                if hasattr(ahu, 'protocol') and 'BACnet' not in ahu.protocol:
+                    continue
+
                 # AHU points
                 if hasattr(ahu, 'get_point_definitions') and hasattr(ahu, 'get_points'):
                     points_def = ahu.get_point_definitions()
@@ -176,16 +205,37 @@ class BACnetRegistrar(ProtocolRegistrar):
                         # Construct point path
                         path_suffix = p_def.name.lower()
                         
+                        # Parse address if available (e.g. "AV:3020", "AV-3020" or "3020")
+                        instance_number = None
+                        if p_def.bacnet_address:
+                            try:
+                                addr_str = p_def.bacnet_address
+                                if ':' in addr_str:
+                                    _, addr = addr_str.split(':')
+                                    instance_number = int(addr)
+                                elif '-' in addr_str:
+                                    _, addr = addr_str.split('-')
+                                    instance_number = int(addr)
+                                else:
+                                    instance_number = int(addr_str)
+                            except ValueError:
+                                logger.warning(f"Invalid BACnet address format: {p_def.bacnet_address}")
+
                         server.register_point(
                             f"{bldg.name}_{ahu.name}_{p_def.name}",
                             val,
                             object_type=p_def.bacnet_object_type,
                             writable=p_def.writable,
-                            point_path=f"{ahu_path}/{path_suffix}"
+                            point_path=f"{ahu_path}/{path_suffix}",
+                            instance_number=instance_number
                         )
                 
                 # VAV points
                 for vav in ahu.vavs:
+                    # Check protocol - only register if BACnet
+                    if hasattr(vav, 'protocol') and 'BACnet' not in vav.protocol:
+                        continue
+
                     vav_path = f"{ahu_path}/vav_{vav.id}"
                     prefix = f"{bldg.name}_{ahu.name}_{vav.name}"
                     
@@ -200,10 +250,67 @@ class BACnetRegistrar(ProtocolRegistrar):
                             
                             path_suffix = p_def.name.lower()
                             
+                            # Parse address if available
+                            instance_number = None
+                            if p_def.bacnet_address:
+                                try:
+                                    addr_str = p_def.bacnet_address
+                                    if ':' in addr_str:
+                                        _, addr = addr_str.split(':')
+                                        instance_number = int(addr)
+                                    elif '-' in addr_str:
+                                        _, addr = addr_str.split('-')
+                                        instance_number = int(addr)
+                                    else:
+                                        instance_number = int(addr_str)
+                                except ValueError:
+                                    logger.warning(f"Invalid BACnet address format: {p_def.bacnet_address}")
+                            
                             server.register_point(
                                 f"{prefix}_{p_def.name}",
                                 val,
                                 object_type=p_def.bacnet_object_type,
                                 writable=p_def.writable,
-                                point_path=f"{vav_path}/{path_suffix}"
+                                point_path=f"{vav_path}/{path_suffix}",
+                                instance_number=instance_number
                             )
+
+            # Gateways
+            for gw in bldg.gateways:
+                gw_path = f"{bldg_path}/gateway_{gw.id}"
+                prefix = f"{bldg.name}_{gw.name}"
+                
+                if hasattr(gw, 'get_point_definitions') and hasattr(gw, 'get_points'):
+                    points_def = gw.get_point_definitions()
+                    points_val = gw.get_points()
+                    
+                    for p_def in points_def:
+                        val = 0.0
+                        if p_def.internal_key and p_def.internal_key in points_val:
+                            val = points_val[p_def.internal_key]
+                        
+                        path_suffix = p_def.name.lower()
+                        
+                        instance_number = None
+                        if p_def.bacnet_address:
+                            try:
+                                addr_str = p_def.bacnet_address
+                                if ':' in addr_str:
+                                    _, addr = addr_str.split(':')
+                                    instance_number = int(addr)
+                                elif '-' in addr_str:
+                                    _, addr = addr_str.split('-')
+                                    instance_number = int(addr)
+                                else:
+                                    instance_number = int(addr_str)
+                            except ValueError:
+                                pass
+
+                        server.register_point(
+                            f"{prefix}_{p_def.name}",
+                            val,
+                            object_type=p_def.bacnet_object_type,
+                            writable=p_def.writable,
+                            point_path=f"{gw_path}/{path_suffix}",
+                            instance_number=instance_number
+                        )

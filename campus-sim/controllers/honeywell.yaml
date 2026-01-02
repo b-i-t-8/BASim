@@ -1,0 +1,14 @@
+manufacturer: Honeywell
+models:
+  Spyder5:
+    description: Spyder 5 VAV Controller
+    inputs: 6
+    outputs: 4
+  CIPer30:
+    description: CIPer Model 30 Controller
+    inputs: 12
+    outputs: 10
+  WEB-8000:
+    description: WEB-8000 Controller
+    inputs: 0
+    outputs: 0

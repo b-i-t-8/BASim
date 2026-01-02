@@ -1,0 +1,14 @@
+manufacturer: KMC Controls
+models:
+  BAC-9000:
+    description: KMC Conquest VAV Controller
+    inputs: 8
+    outputs: 4
+  BAC-5900:
+    description: KMC Conquest General Purpose Controller
+    inputs: 10
+    outputs: 8
+  KMC-Commander:
+    description: KMC Commander IoT Gateway
+    inputs: 0
+    outputs: 0

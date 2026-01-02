@@ -1,0 +1,14 @@
+manufacturer: Schneider Electric
+models:
+  MP-V:
+    description: SpaceLogic MP-V Controller
+    inputs: 6
+    outputs: 4
+  MP-C:
+    description: SpaceLogic MP-C Controller
+    inputs: 16
+    outputs: 12
+  AS-P:
+    description: Automation Server
+    inputs: 0
+    outputs: 0

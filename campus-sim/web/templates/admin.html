@@ -478,6 +478,34 @@
             margin-bottom: -1px;
         }
 
+        .controller-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--border);
+        }
+        .controller-tab-btn {
+            padding: 8px 16px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-bottom: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+        }
+        .controller-tab-btn:hover {
+            color: var(--text);
+            background: var(--card-bg);
+        }
+        .controller-tab-btn.active {
+            color: var(--primary);
+            border-bottom: 2px solid var(--primary);
+            background: var(--card-bg);
+            margin-bottom: -1px;
+        }
+
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         
@@ -671,11 +699,14 @@
     <div class="container">
         <header>
             <div class="header-top">
-                <h1>BASim <span id="header-title" style="font-size: 0.5em; font-weight: normal; opacity: 0.7; margin-left: 15px;"></span></h1>
+                <h1>BASim <span id="header-title" style="font-size: 0.5em; font-weight: normal; opacity: 0.7; margin-left: 15px;">- [Main Campus]</span></h1>
                 <div class="user-info">
                     <a href="{{ url_for('readme_page') }}" class="admin-link" style="margin-right: 15px; text-decoration: none; color: var(--text-muted);">[DOC] Readme</a>
-                    <span class="user-badge {{ user.role }}">{{ user.role|upper }}</span>
-                    <span class="username">{{ user.username }}</span>
+                    <a href="{{ url_for('topology_page') }}" class="admin-link" style="margin-right: 15px; text-decoration: none; color: var(--text-muted);">[NET] Topology</a>
+                    <a href="{{ url_for('protocols_page') }}" class="admin-link" style="margin-right: 15px; text-decoration: none; color: var(--text-muted);">[INT] Protocols</a>
+                    {% if user.role == 'admin' %}
+                    <a href="{{ url_for('admin_config') }}" class="admin-link" style="margin-right: 15px; text-decoration: none; color: var(--text-muted);">[CFG] Admin</a>
+                    {% endif %}
                     <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
                 </div>
             </div>
@@ -686,7 +717,7 @@
         <div class="admin-tabs">
             <a href="{{ url_for('admin_config') }}" class="tab-link {% if active_page == 'config' %}active{% endif %}">Configuration</a>
             <a href="{{ url_for('admin_simulation') }}" class="tab-link {% if active_page == 'simulation' %}active{% endif %}">Simulation Parameters</a>
-            <a href="{{ url_for('admin_profiles') }}" class="tab-link {% if active_page == 'profiles' %}active{% endif %}">Device Profiles</a>
+            <a href="{{ url_for('admin_profiles') }}" class="tab-link {% if active_page == 'profiles' %}active{% endif %}">Equipment & Controllers</a>
         </div>
         
         <!-- Configuration Tab -->
@@ -940,37 +971,52 @@
             </div>
         </div>
 
-        <!-- Device Profiles Tab -->
+        <!-- Equipment & Controllers Tab -->
         <div id="tab-profiles" class="tab-content {% if active_page == 'profiles' %}active{% endif %}">
-            <div class="config-card" style="margin-bottom: 20px;">
-                <h2>DEVICE GENERATION PROFILES</h2>
-                <p style="color: var(--text-muted); font-size: 1.0rem; margin-bottom: 15px;">
-                    Configure the rules used when generating new devices and equipment.
-                </p>
-                <div class="btn-group">
-                    <button class="btn btn-primary" onclick="saveSimParams()">
-                        [SAVE] Save Changes
-                    </button>
-                    <button class="btn btn-secondary" onclick="loadProfiles(); loadSimulationParams();">
-                        [REFRESH] Refresh Data
-                    </button>
-                    <button class="btn btn-secondary" onclick="resetAllSimParams()">
-                        [RESET] Reset All to Defaults
-                    </button>
+            
+            <!-- Sub-Navigation for Equipment/Controllers -->
+            <div class="controller-tabs" style="margin-bottom: 20px; border-bottom: 1px solid var(--border);">
+                <button class="controller-tab-btn active" onclick="showLibrarySubTab('equipment')" id="subtab-btn-equipment">Equipment</button>
+                <button class="controller-tab-btn" onclick="showLibrarySubTab('controllers')" id="subtab-btn-controllers">Controllers</button>
+            </div>
+
+            <!-- Equipment Profiles Section -->
+            <div id="library-equipment" class="library-section">
+                <div class="config-card" style="margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h2>EQUIPMENT PROFILES</h2>
+                        <button class="btn btn-primary" onclick="if(currentProfileId) showAddDeviceTypeModal(currentProfileId); else showToast('No profile selected', 'error');">+ Add Type</button>
+                    </div>
+                    <p style="color: var(--text-muted); font-size: 1.0rem; margin-bottom: 15px;">
+                        Configure the rules used when generating new equipment.
+                    </p>
+                </div>
+                
+                <div id="device-profiles-container">
+                    <div id="manufacturer-profiles-container"></div>
                 </div>
             </div>
-            
-            <div id="device-profiles-container">
-                <div id="manufacturer-profiles-container"></div>
+
+            <!-- Controllers Section -->
+            <div id="library-controllers" class="library-section" style="display: none;">
+                <div class="config-card" style="margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h2>CONTROLLER LIBRARY</h2>
+                        <button class="btn btn-primary" onclick="showAddControllerModal()">+ Add Controller</button>
+                    </div>
+                </div>
+                <div id="controllers-list-container">
+                    <p>Loading controllers...</p>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Edit Device Type Modal -->
+    <!-- Edit Equipment Type Modal -->
     <div id="editDeviceTypeModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="editDeviceTypeTitle">Edit Device Type</h3>
+                <h3 id="editDeviceTypeTitle">Edit Equipment Type</h3>
                 <span class="close" onclick="closeEditDeviceTypeModal()">&times;</span>
             </div>
             <div class="modal-body">
@@ -980,6 +1026,16 @@
                 <div class="form-group">
                     <label for="editDescription">Description</label>
                     <input type="text" id="editDescription" class="form-control" style="width: 100%;">
+                </div>
+
+                <div class="form-group">
+                    <label for="editProtocol">Protocol</label>
+                    <select id="editProtocol" class="form-control" style="width: 100%;">
+                        <option value="BACnet IP">BACnet IP</option>
+                        <option value="BACnet MS/TP">BACnet MS/TP</option>
+                        <option value="Modbus TCP">Modbus TCP</option>
+                        <option value="Modbus RTU">Modbus RTU</option>
+                    </select>
                 </div>
                 
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
@@ -992,12 +1048,14 @@
                         <thead>
                             <tr>
                                 <th style="width: 20%">Name</th>
-                                <th style="width: 15%">Type</th>
+                                <th style="width: 10%">Address</th>
+                                <th style="width: 10%">Type</th>
                                 <th style="width: 15%">Mapping</th>
                                 <th style="width: 5%">W</th>
-                                <th style="width: 25%">Description</th>
-                                <th style="width: 10%">Units</th>
-                                <th style="width: 10%">Action</th>
+                                <th style="width: 10%">Value</th>
+                                <th style="width: 20%">Description</th>
+                                <th style="width: 5%">Units</th>
+                                <th style="width: 5%">Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1012,6 +1070,74 @@
             </div>
         </div>
     </div>
+
+    <!-- Add Equipment Type Modal -->
+    <div id="addDeviceTypeModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3 id="addDeviceTypeTitle">Add Equipment Type</h3>
+                <span class="close" onclick="closeAddDeviceTypeModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="addDeviceTypeProfileSelect">Manufacturer Profile</label>
+                    <select id="addDeviceTypeProfileSelect" class="form-control" style="width: 100%;">
+                        <!-- Options populated by JS -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="addDeviceTypeName">Equipment Type Name</label>
+                    <input type="text" id="addDeviceTypeName" placeholder="e.g. VAV, AHU, Chiller">
+                </div>
+                <div class="form-group">
+                    <label for="addDeviceTypeDescription">Description</label>
+                    <input type="text" id="addDeviceTypeDescription" placeholder="e.g. Variable Air Volume Box">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeAddDeviceTypeModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="submitAddDeviceType()">Add</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Controller Modal -->
+    <div id="editControllerModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3 id="editControllerTitle">Add Controller</h3>
+                <span class="close" onclick="closeEditControllerModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="ctrlManufacturer">Manufacturer</label>
+                    <input type="text" id="ctrlManufacturer" placeholder="e.g. Distech">
+                </div>
+                <div class="form-group">
+                    <label for="ctrlName">Model Name</label>
+                    <input type="text" id="ctrlName" placeholder="e.g. ECY-VAV">
+                </div>
+                <div class="form-group">
+                    <label for="ctrlDescription">Description</label>
+                    <input type="text" id="ctrlDescription" placeholder="e.g. VAV Controller">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="ctrlInputs">Inputs</label>
+                        <input type="number" id="ctrlInputs" value="0" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="ctrlOutputs">Outputs</label>
+                        <input type="number" id="ctrlOutputs" value="0" min="0">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeEditControllerModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveController()">Save</button>
+            </div>
+        </div>
+    </div>
     
     <div class="toast" id="toast"></div>
     
@@ -1022,6 +1148,7 @@
         let simParams = null;
         let simParamsModified = {};
         let loadedProfiles = []; // Store profiles globally
+        let currentProfileId = null;
 
         const INTERNAL_KEYS = {
             'VAV': [
@@ -1094,11 +1221,23 @@
             if (activePage === 'simulation') {
                 loadSimulationParams();
             } else if (activePage === 'profiles') {
-                loadProfiles().then(() => {
-                    if (activeProfile) {
-                        showProfileTab(activeProfile);
-                    }
-                });
+                const urlParams = new URLSearchParams(window.location.search);
+                const view = urlParams.get('view');
+
+                if (view === 'controllers') {
+                    showLibrarySubTab('controllers').then(() => {
+                        if (activeProfile) {
+                            showControllerTab(activeProfile);
+                        }
+                    });
+                } else {
+                    showLibrarySubTab('equipment');
+                    loadProfiles().then(() => {
+                        if (activeProfile) {
+                            showProfileTab(activeProfile);
+                        }
+                    });
+                }
                 loadSimulationParams(); // Also load gen params
             }
         });
@@ -1806,6 +1945,7 @@
             let tabsHtml = '<div class="profile-tabs">';
             profiles.forEach((p, index) => {
                 const active = index === 0 ? 'active' : '';
+                if (index === 0) currentProfileId = p.id;
                 tabsHtml += `<button class="profile-tab-btn ${active}" onclick="showProfileTab('${p.id}')">${p.name}</button>`;
             });
             tabsHtml += '</div>';
@@ -1822,25 +1962,45 @@
                         <table class="override-table" style="width: 100%; margin-top: 15px;">
                             <thead>
                                 <tr>
-                                    <th>Device Type</th>
+                                    <th>Equipment Type</th>
+                                    <th>Controller Model</th>
                                     <th>Description</th>
-                                    <th>Defaults</th>
-                                    <th>Points</th>
+                                    <th>Setpoints</th>
+                                    <th>Hardwired IO</th>
+                                    <th>PIDs</th>
                                 </tr>
                             </thead>
                             <tbody>
                     `;
                     
                     for (const [type, data] of Object.entries(p.device_types)) {
-                        const defaultsCount = data.defaults ? Object.keys(data.defaults).length : 0;
-                        const pointsCount = data.points ? Object.keys(data.points).length : 0;
+                        let setpointsCount = 0;
+                        let hardwarePointsCount = 0;
+                        let pidsCount = 0;
+                        
+                        if (data.points) {
+                            Object.values(data.points).forEach(pt => {
+                                if (pt.address) {
+                                    hardwarePointsCount++;
+                                }
+                                if (pt.writable) {
+                                    setpointsCount++;
+                                }
+                            });
+                        }
+                        
+                        if (data.pids) {
+                             pidsCount = Object.keys(data.pids).length;
+                        }
                         
                         deviceTypesHtml += `
                             <tr>
                                 <td><a href="#" onclick="showEditDeviceTypeModal('${p.id}', '${type}'); return false;" style="color: var(--primary); font-weight: bold;">${type}</a></td>
+                                <td><span class="ahu-type-badge" style="background: var(--bg-dark); border: 1px solid var(--border); font-size: 0.8rem;">${data.controller_model || 'Generic'}</span></td>
                                 <td>${data.description || ''}</td>
-                                <td>${defaultsCount} settings</td>
-                                <td>${pointsCount} points</td>
+                                <td>${setpointsCount}</td>
+                                <td>${hardwarePointsCount}</td>
+                                <td>${pidsCount}</td>
                             </tr>
                         `;
                     }
@@ -1872,8 +2032,7 @@
                             </div>
                             
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; border-bottom: 1px solid var(--border); padding-bottom: 5px;">
-                                <h4 style="margin: 0;">Device Types</h4>
-                                <button class="btn btn-sm btn-primary" onclick="showAddDeviceTypeModal('${p.id}')" style="padding: 2px 8px; font-size: 0.8rem;">+ Add Type</button>
+                                <h4 style="margin: 0;">Equipment Types</h4>
                             </div>
                             ${deviceTypesHtml}
                         </div>
@@ -1901,42 +2060,57 @@
             // Hide summary
             if (summary) summary.style.display = 'none';
             
-            let defaultsHtml = '<div class="config-item"><span class="label" style="font-style: italic;">No defaults defined</span></div>';
-            if (data.defaults && Object.keys(data.defaults).length > 0) {
-                defaultsHtml = '';
-                for (const [k, v] of Object.entries(data.defaults)) {
-                    defaultsHtml += `
+            // Separate points
+            const setpoints = {};
+            const hardwarePoints = {};
+            
+            if (data.points) {
+                for (const [pid, pdata] of Object.entries(data.points)) {
+                    if (pdata.writable) {
+                        setpoints[pid] = pdata;
+                    }
+                    if (pdata.address) {
+                        hardwarePoints[pid] = pdata;
+                    }
+                }
+            }
+            
+            let setpointsHtml = '<div class="config-item"><span class="label" style="font-style: italic;">No setpoints defined</span></div>';
+            if (Object.keys(setpoints).length > 0) {
+                setpointsHtml = '';
+                for (const [k, v] of Object.entries(setpoints)) {
+                    setpointsHtml += `
                         <div class="config-item">
                             <span class="label">${k}</span>
-                            <span class="value">${v}</span>
+                            <span class="value">${v.value !== undefined ? v.value : ''}</span>
                         </div>
                     `;
                 }
             }
             
-            let pointsHtml = '<p>No points defined</p>';
-            if (data.points && Object.keys(data.points).length > 0) {
-                pointsHtml = `
+            let hardwarePointsHtml = '<p>No hardwired IO defined</p>';
+            if (Object.keys(hardwarePoints).length > 0) {
+                hardwarePointsHtml = `
                     <table class="override-table" style="width: 100%;">
                         <thead>
                             <tr>
                                 <th>ID</th>
-                                <th>Name</th>
+                                <th>Address</th>
                                 <th>Description</th>
                             </tr>
                         </thead>
                         <tbody>
                 `;
-                for (const [pid, pdata] of Object.entries(data.points)) {
-                    pointsHtml += `
+                for (const [pid, pdata] of Object.entries(hardwarePoints)) {
+                    hardwarePointsHtml += `
                         <tr>
                             <td>${pid}</td>
-                            <td>${pdata.name}</td>
-                            <td>${pdata.description}</td>
+                            <td>${pdata.address || ''}</td>
+                            <td>${pdata.description || ''}</td>
                         </tr>
                     `;
                 }
-                pointsHtml += '</tbody></table>';
+                hardwarePointsHtml += '</tbody></table>';
             }
 
             const detailHtml = `
@@ -1948,14 +2122,14 @@
                     
                     <div class="form-row">
                         <div>
-                            <h4 style="margin-bottom: 10px; color: var(--primary);">Default Settings</h4>
+                            <h4 style="margin-bottom: 10px; color: var(--primary);">Setpoints</h4>
                             <div class="current-config">
-                                ${defaultsHtml}
+                                ${setpointsHtml}
                             </div>
                         </div>
                         <div>
-                            <h4 style="margin-bottom: 10px; color: var(--primary);">Point Map</h4>
-                            ${pointsHtml}
+                            <h4 style="margin-bottom: 10px; color: var(--primary);">Hardwired IO</h4>
+                            ${hardwarePointsHtml}
                         </div>
                     </div>
                 </div>
@@ -1980,6 +2154,7 @@
         }
 
         function showProfileTab(profileId) {
+            currentProfileId = profileId;
             // Hide all contents
             document.querySelectorAll('.profile-content').forEach(el => el.style.display = 'none');
             // Show selected content
@@ -2001,9 +2176,10 @@
             }
 
             // Update URL without reloading
-            const newUrl = `/admin/profiles/${profileId}`;
-            if (window.location.pathname !== newUrl) {
-                history.pushState({ profileId: profileId }, '', newUrl);
+            const url = new URL(window.location.origin + `/admin/profiles/${profileId}`);
+            url.searchParams.set('view', 'equipment');
+            if (window.location.href !== url.href) {
+                history.pushState({ profileId: profileId }, '', url);
             }
         }
 
@@ -2117,12 +2293,52 @@
 
         // Add Device Type Modal Logic
         function showAddDeviceTypeModal(profileId) {
-            const typeName = prompt("Enter new Device Type name (e.g., FCU, Chiller):");
-            if (!typeName) return;
+            const select = document.getElementById('addDeviceTypeProfileSelect');
+            select.innerHTML = '';
             
-            const description = prompt("Enter description (optional):") || "";
-            
-            addDeviceType(profileId, typeName, description);
+            if (loadedProfiles && loadedProfiles.length > 0) {
+                loadedProfiles.forEach(p => {
+                    const option = document.createElement('option');
+                    option.value = p.id;
+                    option.textContent = p.name;
+                    if (p.id === profileId) {
+                        option.selected = true;
+                    }
+                    select.appendChild(option);
+                });
+            } else {
+                const option = document.createElement('option');
+                option.text = "No profiles loaded";
+                select.appendChild(option);
+            }
+
+            document.getElementById('addDeviceTypeName').value = '';
+            document.getElementById('addDeviceTypeDescription').value = '';
+            document.getElementById('addDeviceTypeModal').style.display = 'block';
+            document.getElementById('addDeviceTypeName').focus();
+        }
+
+        function closeAddDeviceTypeModal() {
+            document.getElementById('addDeviceTypeModal').style.display = 'none';
+        }
+
+        async function submitAddDeviceType() {
+            const profileId = document.getElementById('addDeviceTypeProfileSelect').value;
+            const typeName = document.getElementById('addDeviceTypeName').value.trim();
+            const description = document.getElementById('addDeviceTypeDescription').value.trim();
+
+            if (!profileId) {
+                showToast('Please select a manufacturer profile', 'error');
+                return;
+            }
+
+            if (!typeName) {
+                showToast('Equipment Type Name is required', 'error');
+                return;
+            }
+
+            closeAddDeviceTypeModal();
+            await addDeviceType(profileId, typeName, description);
         }
 
         async function addDeviceType(profileId, typeName, description) {
@@ -2159,6 +2375,7 @@
             document.getElementById('editDeviceTypeId').value = deviceTypeId;
             document.getElementById('editDeviceTypeTitle').textContent = `Edit Device Type: ${deviceTypeId}`;
             document.getElementById('editDescription').value = deviceType.description || '';
+            document.getElementById('editProtocol').value = deviceType.protocol || 'BACnet IP';
             
             const tbody = document.querySelector('#editPointsTable tbody');
             tbody.innerHTML = '';
@@ -2185,11 +2402,13 @@
             tr.className = 'point-row';
             
             const name = data.name || '';
+            const address = data.address || '';
             const type = data.type || 'AI';
             const writable = data.writable ? 'checked' : '';
             const description = data.description || '';
             const units = data.units || '';
             const mapping = data.mapping || '';
+            const value = data.value !== undefined ? data.value : '';
             
             // Get available mappings for this device type
             const deviceTypeId = document.getElementById('editDeviceTypeId').value;
@@ -2210,6 +2429,7 @@
             
             tr.innerHTML = `
                 <td><input type="text" class="point-name" value="${name}" placeholder="Point Name"></td>
+                <td><input type="text" class="point-address" value="${address}" placeholder="Address (e.g. AV:1)"></td>
                 <td>
                     <select class="point-type">
                         <option value="AI" ${type === 'AI' ? 'selected' : ''}>AI (Analog Input)</option>
@@ -2222,8 +2442,9 @@
                 </td>
                 <td>${mappingHtml}</td>
                 <td style="text-align: center;"><input type="checkbox" class="point-writable" ${writable}></td>
+                <td><input type="text" class="point-value" value="${value}" placeholder="Value" style="width: 60px;"></td>
                 <td><input type="text" class="point-desc" value="${description}" placeholder="Description"></td>
-                <td><input type="text" class="point-units" value="${units}" placeholder="Units"></td>
+                <td><input type="text" class="point-units" value="${units}" placeholder="Units" style="width: 50px;"></td>
                 <td><button class="btn btn-sm btn-danger" onclick="removePointRow(this)" style="color: var(--danger); border-color: var(--danger);">X</button></td>
             `;
             
@@ -2238,18 +2459,25 @@
             const profileId = document.getElementById('editProfileId').value;
             const deviceTypeId = document.getElementById('editDeviceTypeId').value;
             const description = document.getElementById('editDescription').value;
+            const protocol = document.getElementById('editProtocol').value;
             
             const points = {};
             document.querySelectorAll('#editPointsTable tbody tr').forEach(tr => {
                 const name = tr.querySelector('.point-name').value.trim();
                 if (name) {
-                    points[name] = {
+                    const val = tr.querySelector('.point-value').value.trim();
+                    const pointData = {
+                        address: tr.querySelector('.point-address').value.trim(),
                         type: tr.querySelector('.point-type').value,
                         mapping: tr.querySelector('.point-mapping').value,
                         writable: tr.querySelector('.point-writable').checked,
                         description: tr.querySelector('.point-desc').value,
                         units: tr.querySelector('.point-units').value
                     };
+                    if (val !== '') {
+                        pointData.value = isNaN(val) ? val : parseFloat(val);
+                    }
+                    points[name] = pointData;
                 }
             });
             
@@ -2258,6 +2486,7 @@
                     method: 'PUT',
                     body: JSON.stringify({
                         description: description,
+                        protocol: protocol,
                         points: points
                     })
                 });
@@ -2402,6 +2631,240 @@
                 }
             } catch (error) {
                 showToast('Save failed: ' + error.message, 'error');
+            }
+        }
+
+        // --- Controller Management ---
+
+        function showLibrarySubTab(tabName) {
+            // Hide all library sections
+            document.querySelectorAll('.library-section').forEach(el => el.style.display = 'none');
+            
+            // Show selected section
+            document.getElementById('library-' + tabName).style.display = 'block';
+            
+            // Update buttons
+            document.querySelectorAll('#subtab-btn-equipment, #subtab-btn-controllers').forEach(el => {
+                el.classList.remove('active');
+            });
+            document.getElementById('subtab-btn-' + tabName).classList.add('active');
+
+            // Load data if needed
+            if (tabName === 'controllers') {
+                return loadControllers();
+            }
+
+            // Update URL
+            const url = new URL(window.location);
+            const currentView = url.searchParams.get('view');
+            
+            // Only update history if the view is actually changing (user clicked tab)
+            // This prevents overwriting the URL on initial load
+            if (currentView !== tabName) {
+                // Reset to base path to avoid mismatch with default selected tab
+                const newUrl = new URL(window.location.origin + '/admin/profiles');
+                newUrl.searchParams.set('view', tabName);
+                history.pushState({}, '', newUrl);
+            }
+        }
+
+        async function loadControllers() {
+            const container = document.getElementById('controllers-list-container');
+            try {
+                container.innerHTML = '<p style="color: var(--text-muted);">Loading controllers...</p>';
+                const response = await apiRequest('/api/admin/controllers');
+                if (response && response.ok) {
+                    const controllers = await response.json();
+                    renderControllers(controllers);
+                } else {
+                    container.innerHTML = '<p style="color: var(--error);">Failed to load controllers.</p>';
+                }
+            } catch (error) {
+                console.error('Failed to load controllers:', error);
+                container.innerHTML = `<p style="color: var(--error);">Error: ${error.message}</p>`;
+            }
+        }
+
+        function renderControllers(controllers) {
+            const container = document.getElementById('controllers-list-container');
+            if (!controllers || controllers.length === 0) {
+                container.innerHTML = '<p>No controllers found.</p>';
+                return;
+            }
+
+            // Group by manufacturer
+            const grouped = {};
+            controllers.forEach(c => {
+                if (!grouped[c.manufacturer]) {
+                    grouped[c.manufacturer] = [];
+                }
+                grouped[c.manufacturer].push(c);
+            });
+
+            const manufacturers = Object.keys(grouped).sort();
+
+            // Create tabs
+            let tabsHtml = '<div class="controller-tabs">';
+            manufacturers.forEach((m, index) => {
+                const active = index === 0 ? 'active' : '';
+                // Use a safe ID for the tab
+                const safeId = m.replace(/[^a-zA-Z0-9]/g, '_');
+                tabsHtml += `<button class="controller-tab-btn ${active}" onclick="showControllerTab('${safeId}')">${m}</button>`;
+            });
+            tabsHtml += '</div>';
+
+            // Create content
+            let contentHtml = '';
+            manufacturers.forEach((m, index) => {
+                const safeId = m.replace(/[^a-zA-Z0-9]/g, '_');
+                const display = index === 0 ? 'block' : 'none';
+                
+                contentHtml += `<div id="controller-tab-${safeId}" class="controller-content" style="display: ${display};">`;
+                contentHtml += `
+                    <table class="override-table" style="width: 100%; margin-top: 15px;">
+                        <thead>
+                            <tr>
+                                <th>Model</th>
+                                <th>Description</th>
+                                <th>Inputs</th>
+                                <th>Outputs</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                grouped[m].forEach(c => {
+                    contentHtml += `
+                        <tr>
+                            <td><strong>${c.name}</strong></td>
+                            <td>${c.description}</td>
+                            <td>${c.inputs}</td>
+                            <td>${c.outputs}</td>
+                            <td>
+                                <button class="btn btn-sm btn-secondary" onclick='showEditControllerModal(${JSON.stringify(c)})'>Edit</button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteController('${c.name}')">Delete</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                contentHtml += `
+                        </tbody>
+                    </table>
+                </div>
+                `;
+            });
+
+            container.innerHTML = tabsHtml + contentHtml;
+        }
+
+        function showControllerTab(manufacturerId) {
+            // Hide all contents
+            document.querySelectorAll('.controller-content').forEach(el => el.style.display = 'none');
+            // Show selected content
+            const content = document.getElementById('controller-tab-' + manufacturerId);
+            if (content) content.style.display = 'block';
+            
+            // Update tabs
+            document.querySelectorAll('.controller-tab-btn').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            // Find the button that was clicked
+            const buttons = document.querySelectorAll('.controller-tab-btn');
+            for (let btn of buttons) {
+                if (btn.getAttribute('onclick').includes(`'${manufacturerId}'`)) {
+                    btn.classList.add('active');
+                    break;
+                }
+            }
+
+            // Update URL
+            const url = new URL(window.location.origin + `/admin/profiles/${manufacturerId}`);
+            url.searchParams.set('view', 'controllers');
+            if (window.location.href !== url.href) {
+                history.pushState({ manufacturerId: manufacturerId }, '', url);
+            }
+        }
+
+        function showAddControllerModal() {
+            document.getElementById('editControllerTitle').textContent = 'Add Controller';
+            document.getElementById('ctrlManufacturer').value = '';
+            document.getElementById('ctrlName').value = '';
+            document.getElementById('ctrlName').disabled = false;
+            document.getElementById('ctrlDescription').value = '';
+            document.getElementById('ctrlInputs').value = 0;
+            document.getElementById('ctrlOutputs').value = 0;
+            
+            document.getElementById('editControllerModal').style.display = 'block';
+        }
+
+        function showEditControllerModal(c) {
+            document.getElementById('editControllerTitle').textContent = 'Edit Controller';
+            document.getElementById('ctrlManufacturer').value = c.manufacturer;
+            document.getElementById('ctrlName').value = c.name;
+            document.getElementById('ctrlName').disabled = true; // Cannot change ID
+            document.getElementById('ctrlDescription').value = c.description;
+            document.getElementById('ctrlInputs').value = c.inputs;
+            document.getElementById('ctrlOutputs').value = c.outputs;
+            
+            document.getElementById('editControllerModal').style.display = 'block';
+        }
+
+        function closeEditControllerModal() {
+            document.getElementById('editControllerModal').style.display = 'none';
+        }
+
+        async function saveController() {
+            const data = {
+                manufacturer: document.getElementById('ctrlManufacturer').value,
+                name: document.getElementById('ctrlName').value,
+                description: document.getElementById('ctrlDescription').value,
+                inputs: document.getElementById('ctrlInputs').value,
+                outputs: document.getElementById('ctrlOutputs').value
+            };
+
+            if (!data.manufacturer || !data.name) {
+                showToast('Manufacturer and Name are required', 'error');
+                return;
+            }
+
+            try {
+                const response = await apiRequest('/api/admin/controllers', {
+                    method: 'POST',
+                    body: JSON.stringify(data)
+                });
+
+                if (response && response.ok) {
+                    showToast('Controller saved successfully', 'success');
+                    closeEditControllerModal();
+                    loadControllers();
+                } else {
+                    const err = await response.json();
+                    showToast('Failed to save: ' + (err.error || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                showToast('Error: ' + error.message, 'error');
+            }
+        }
+
+        async function deleteController(name) {
+            if (!confirm(`Are you sure you want to delete controller ${name}?`)) return;
+
+            try {
+                const response = await apiRequest(`/api/admin/controllers/${name}`, {
+                    method: 'DELETE'
+                });
+
+                if (response && response.ok) {
+                    showToast('Controller deleted', 'success');
+                    loadControllers();
+                } else {
+                    showToast('Failed to delete controller', 'error');
+                }
+            } catch (error) {
+                showToast('Error: ' + error.message, 'error');
             }
         }
     </script>

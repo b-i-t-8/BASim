@@ -1,0 +1,14 @@
+manufacturer: Johnson Controls
+models:
+  FEC2611:
+    description: Field Equipment Controller - VAV
+    inputs: 6
+    outputs: 5
+  FAC2511:
+    description: Advanced Application Field Equipment Controller
+    inputs: 18
+    outputs: 12
+  NAE55:
+    description: Network Automation Engine
+    inputs: 0
+    outputs: 0

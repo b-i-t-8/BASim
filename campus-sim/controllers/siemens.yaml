@@ -1,0 +1,14 @@
+manufacturer: Siemens
+models:
+  DXR2.E09:
+    description: Desigo Room Automation Station
+    inputs: 8
+    outputs: 4
+  PXC4:
+    description: Desigo PXC4 Automation Station
+    inputs: 16
+    outputs: 12
+  PXC5:
+    description: Desigo PXC5 System Controller
+    inputs: 0
+    outputs: 0

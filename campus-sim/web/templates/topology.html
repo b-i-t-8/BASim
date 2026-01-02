@@ -20,7 +20,7 @@
         }
         .back { color: var(--text-muted); text-decoration: none; font-size: 21px; }
         .back:hover { color: var(--primary); }
-        h1 { font-size: 23px; font-weight: normal; margin: 12px 0 5px; letter-spacing: 2px; text-transform: uppercase; color: var(--primary); }
+        .page-title { font-size: 23px; font-weight: normal; margin: 12px 0 5px; letter-spacing: 2px; text-transform: uppercase; color: var(--primary); }
         .subtitle { color: var(--text-muted); font-size: 20px; margin-bottom: 18px; }
         
         /* Riser Diagram Container */
@@ -400,8 +400,22 @@
         ⚠️ WORK IN PROGRESS: This simulator is under active development.
     </div>
     <div class="page-wrap">
-        <a href="{{ url_for('index') }}" class="back">[&lt;] Dashboard</a>
-        <h1>Network Topology</h1>
+        <header>
+            <div class="header-top">
+                <h1>BASim <span id="header-title" style="font-size: 0.5em; font-weight: normal; opacity: 0.7; margin-left: 15px;">- [Main Campus]</span></h1>
+                <div class="user-info">
+                    <a href="{{ url_for('readme_page') }}" class="admin-link" style="margin-right: 15px; text-decoration: none; color: var(--text-muted);">[DOC] Readme</a>
+                    <a href="{{ url_for('topology_page') }}" class="admin-link" style="margin-right: 15px; text-decoration: none; color: var(--text-muted);">[NET] Topology</a>
+                    <a href="{{ url_for('protocols_page') }}" class="admin-link" style="margin-right: 15px; text-decoration: none; color: var(--text-muted);">[INT] Protocols</a>
+                    {% if user.role == 'admin' %}
+                    <a href="{{ url_for('admin_config') }}" class="admin-link" style="margin-right: 15px; text-decoration: none; color: var(--text-muted);">[CFG] Admin</a>
+                    {% endif %}
+                    <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+                </div>
+            </div>
+        </header>
+        <a href="{{ url_for('index') }}" class="back" style="display: inline-block; margin-top: 15px;">[&lt;] Dashboard</a>
+        <h1 class="page-title">Network Topology</h1>
         <p class="subtitle">Network riser diagram showing all simulated BAS devices and communication paths</p>
         
         <div id="main">

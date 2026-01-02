@@ -1,0 +1,14 @@
+manufacturer: Distech Controls
+models:
+  ECY-VAV:
+    description: Eclypse Connected VAV Controller
+    inputs: 4
+    outputs: 4
+  ECY-PTU:
+    description: Eclypse Connected PTU Controller
+    inputs: 8
+    outputs: 6
+  ECY-S1000:
+    description: Eclypse Connected System Controller
+    inputs: 20
+    outputs: 16

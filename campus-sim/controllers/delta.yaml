@@ -1,0 +1,14 @@
+manufacturer: Delta Controls
+models:
+  eZV-440:
+    description: enteliZON VAV Controller
+    inputs: 4
+    outputs: 4
+  eBCON:
+    description: enteliBUS Controller
+    inputs: 0
+    outputs: 0
+  eBMGR:
+    description: enteliBUS Manager
+    inputs: 0
+    outputs: 0

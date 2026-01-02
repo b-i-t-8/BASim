@@ -508,12 +508,48 @@ class CampusModelGenerator:
                 ahu_type = "100%OA" if is_oa_ahu else "VAV"
                 ahu_name = f"OA_AHU_{a_idx + 1}" if is_oa_ahu else f"AHU_{a_idx + 1}"
                 
+                # Check profile for AHU defaults and extra points
+                ahu_supply_temp_sp = 55.0
+                ahu_extra_points = {}
+                ahu_protocol = "BACnet IP"
+                
+                # Select AHU type from profile
+                ahu_profile_type = 'AHU'
+                if profile:
+                    ahu_types = [k for k in profile.device_definitions.keys() if k.startswith('AHU')]
+                    if ahu_types:
+                        ahu_profile_type = random.choice(ahu_types)
+
+                if profile and ahu_profile_type in profile.device_definitions:
+                    ahu_protocol = profile.device_definitions[ahu_profile_type].get('protocol', 'BACnet IP')
+                    ahu_points = profile.device_definitions[ahu_profile_type].get('points', {})
+                    for p_name, p_data in ahu_points.items():
+                        mapping = p_data.get('mapping')
+                        val = p_data.get('value')
+                        if mapping == 'supply_temp_setpoint':
+                            if val is not None:
+                                ahu_supply_temp_sp = float(val)
+                        elif not mapping and val is not None:
+                            try:
+                                ahu_extra_points[p_name] = float(val)
+                            except (ValueError, TypeError):
+                                if str(val).lower() == "occupied":
+                                    ahu_extra_points[p_name] = 1.0
+                                elif str(val).lower() == "unoccupied":
+                                    ahu_extra_points[p_name] = 0.0
+                                else:
+                                    ahu_extra_points[p_name] = 0.0
+                                
                 ahu = AHU(
                     id=a_idx + 1, 
                     name=ahu_name,
                     ahu_type=ahu_type,
                     fan_speed=random.uniform(60.0, 90.0),
-                    filter_dp=random.uniform(0.3, 0.8)
+                    filter_dp=random.uniform(0.3, 0.8),
+                    supply_temp_setpoint=ahu_supply_temp_sp,
+                    extra_points=ahu_extra_points,
+                    protocol=ahu_protocol,
+                    profile_type=ahu_profile_type
                 )
                 
                 # 100% OA AHUs don't have VAVs - they provide fresh air to the building
@@ -551,6 +587,40 @@ class CampusModelGenerator:
                         cooling_sp = round(setpoint + 2.0, 1)  # Cooling setpoint 2°F above midpoint
                         heating_sp = round(setpoint - 2.0, 1)  # Heating setpoint 2°F below midpoint
                         
+                        # Check profile for VAV defaults and extra points
+                        vav_extra_points = {}
+                        vav_protocol = "BACnet IP"
+                        
+                        # Select VAV type from profile
+                        vav_profile_type = 'VAV'
+                        if profile:
+                            vav_types = [k for k in profile.device_definitions.keys() if k.startswith('VAV')]
+                            if vav_types:
+                                vav_profile_type = random.choice(vav_types)
+
+                        if profile and vav_profile_type in profile.device_definitions:
+                            vav_protocol = profile.device_definitions[vav_profile_type].get('protocol', 'BACnet IP')
+                            vav_points = profile.device_definitions[vav_profile_type].get('points', {})
+                            for p_name, p_data in vav_points.items():
+                                mapping = p_data.get('mapping')
+                                val = p_data.get('value')
+                                if mapping == 'cooling_setpoint':
+                                    if val is not None:
+                                        cooling_sp = float(val)
+                                elif mapping == 'heating_setpoint':
+                                    if val is not None:
+                                        heating_sp = float(val)
+                                elif not mapping and val is not None:
+                                    try:
+                                        vav_extra_points[p_name] = float(val)
+                                    except (ValueError, TypeError):
+                                        if str(val).lower() == "occupied":
+                                            vav_extra_points[p_name] = 1.0
+                                        elif str(val).lower() == "unoccupied":
+                                            vav_extra_points[p_name] = 0.0
+                                        else:
+                                            vav_extra_points[p_name] = 0.0
+
                         vav = VAV(
                             id=v_idx + 1, 
                             name=f"VAV_{v_idx + 1}",
@@ -564,12 +634,65 @@ class CampusModelGenerator:
                             damper_position=random.uniform(20.0, 60.0),
                             reheat_valve=random.uniform(0.0, 20.0),
                             occupancy=random.random() > 0.3,  # 70% occupied initially
-                            _thermal_model=thermal_model
+                            _thermal_model=thermal_model,
+                            extra_points=vav_extra_points,
+                            protocol=vav_protocol,
+                            profile_type=vav_profile_type
                         )
                         ahu.vavs.append(vav)
                 
                 bldg.ahus.append(ahu)
             
+            # Check if we need a Gateway (if any device is MSTP or RTU)
+            needs_gateway = False
+            for ahu in bldg.ahus:
+                if "MS/TP" in ahu.protocol or "RTU" in ahu.protocol:
+                    needs_gateway = True
+                    break
+                for vav in ahu.vavs:
+                    if "MS/TP" in vav.protocol or "RTU" in vav.protocol:
+                        needs_gateway = True
+                        break
+            
+            if needs_gateway:
+                from models.hvac import Gateway, BACnetIPPort, MSTPPort, ModbusTCPPort, ModbusRTUPort
+                
+                # Use the building's profile for the gateway
+                gw_profile = profile
+                
+                # Extract ports from profile
+                ports = []
+                if gw_profile and 'Gateway' in gw_profile.device_definitions:
+                    profile_ports = gw_profile.device_definitions['Gateway'].get('ports', [])
+                    for p_data in profile_ports:
+                        # Clone the data to avoid modifying the profile
+                        config = p_data.copy()
+                        name = config.pop('name', 'Unknown')
+                        p_type = config.pop('type', 'Unknown')
+                        
+                        if p_type == "BACnet/IP":
+                            ports.append(BACnetIPPort(name=name, **config))
+                        elif p_type == "MS/TP":
+                            ports.append(MSTPPort(name=name, **config))
+                        elif p_type == "Modbus TCP":
+                            ports.append(ModbusTCPPort(name=name, **config))
+                        elif p_type == "Modbus RTU":
+                            ports.append(ModbusRTUPort(name=name, **config))
+                else:
+                    # Default ports if not defined in profile
+                    ports = [
+                        BACnetIPPort(name="IP_Interface", port=47808, network_number=100),
+                        MSTPPort(name="MSTP_Port_1", baud_rate=38400, network_number=2001, mac_address=1)
+                    ]
+                
+                gw = Gateway(
+                    id=1,
+                    name=f"{bldg.name}_Gateway",
+                    profile=gw_profile,
+                    ports=ports
+                )
+                bldg.gateways.append(gw)
+
             buildings.append(bldg)
         
         return buildings

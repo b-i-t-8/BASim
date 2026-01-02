@@ -1,0 +1,14 @@
+manufacturer: Trane
+models:
+  UC210:
+    description: Tracer UC210 VAV Controller
+    inputs: 5
+    outputs: 4
+  UC600:
+    description: Tracer UC600 Programmable Controller
+    inputs: 20
+    outputs: 16
+  TracerSC:
+    description: Tracer SC System Controller
+    inputs: 1
+    outputs: 0

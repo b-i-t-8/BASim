@@ -1173,7 +1173,7 @@ def create_app(engine: CampusEngine) -> Flask:
                 'manufacturer': p.manufacturer,
                 'description': p.description,
                 'naming_convention': p.naming_convention,
-                'device_types': p.device_types or {},
+                'device_types': p.device_definitions or {},
                 'config_file': p.config_file,
                 'protocols': p.protocols
             })
@@ -1225,11 +1225,11 @@ def create_app(engine: CampusEngine) -> Flask:
             
         profile = PROFILES[profile_id]
         
-        if device_type in profile.device_types:
+        if device_type in profile.device_definitions:
             return jsonify({'error': 'Device type already exists'}), 400
             
         # Initialize new device type structure
-        profile.device_types[device_type] = {
+        profile.device_definitions[device_type] = {
             'description': description,
             'defaults': {},
             'points': {}
@@ -1251,7 +1251,7 @@ def create_app(engine: CampusEngine) -> Flask:
             
         profile = PROFILES[profile_id]
         
-        if device_type_id not in profile.device_types:
+        if device_type_id not in profile.device_definitions:
             return jsonify({'error': 'Device type not found'}), 404
             
         data = request.get_json()
@@ -1259,11 +1259,11 @@ def create_app(engine: CampusEngine) -> Flask:
         points = data.get('points')
         
         if description is not None:
-            profile.device_types[device_type_id]['description'] = description
+            profile.device_definitions[device_type_id]['description'] = description
             
         if points is not None:
             # Validate points structure if necessary
-            profile.device_types[device_type_id]['points'] = points
+            profile.device_definitions[device_type_id]['points'] = points
             
         if save_profile(profile):
             return jsonify({'success': True, 'message': f'Updated {device_type_id} in {profile.name}'})
@@ -1337,6 +1337,64 @@ def create_app(engine: CampusEngine) -> Flask:
             return jsonify({'success': True, 'message': 'Profile updated successfully'})
         except Exception as e:
             return jsonify({'error': str(e)}), 500
+
+    @app.route('/api/admin/controllers', methods=['GET'])
+    @login_required
+    def get_controllers():
+        """Get available controllers."""
+        from profiles import CONTROLLERS, load_controllers
+        
+        # Ensure loaded
+        if not CONTROLLERS:
+            load_controllers()
+            
+        controllers_list = []
+        for key, c in CONTROLLERS.items():
+            controllers_list.append({
+                'name': c.name,
+                'manufacturer': c.manufacturer,
+                'description': c.description,
+                'inputs': c.inputs,
+                'outputs': c.outputs
+            })
+            
+        # Sort by manufacturer then name
+        controllers_list.sort(key=lambda x: (x['manufacturer'], x['name']))
+        return jsonify(controllers_list)
+
+    @app.route('/api/admin/controllers', methods=['POST'])
+    @login_required
+    def save_controller_api():
+        """Save or update a controller."""
+        from profiles import save_controller
+        
+        data = request.get_json()
+        name = data.get('name')
+        manufacturer = data.get('manufacturer')
+        description = data.get('description', '')
+        inputs = int(data.get('inputs', 0))
+        outputs = int(data.get('outputs', 0))
+        
+        if not name or not manufacturer:
+            return jsonify({'error': 'Name and Manufacturer are required'}), 400
+            
+        success = save_controller(name, manufacturer, description, inputs, outputs)
+        if success:
+            return jsonify({'success': True})
+        else:
+            return jsonify({'error': 'Failed to save controller'}), 500
+
+    @app.route('/api/admin/controllers/<model_name>', methods=['DELETE'])
+    @login_required
+    def delete_controller_api(model_name):
+        """Delete a controller."""
+        from profiles import delete_controller
+        
+        success = delete_controller(model_name)
+        if success:
+            return jsonify({'success': True})
+        else:
+            return jsonify({'error': 'Failed to delete controller'}), 500
 
     
     # --- Override Management API ---

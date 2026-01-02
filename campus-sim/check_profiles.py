@@ -14,8 +14,9 @@ try:
     print(f"Profiles loaded: {len(profiles.PROFILES)}")
     for name, p in profiles.PROFILES.items():
         print(f"Profile: {name}")
-        print(f"  Device Types: {list(p.device_types.keys())}")
-        if 'VAV' in p.device_types:
-            print(f"  VAV Defaults: {p.device_types['VAV'].get('defaults', {}).keys()}")
+        print(f"  Device Types: {list(p.device_definitions.keys())}")
+        for dt in p.device_definitions:
+            if dt.startswith('VAV'):
+                print(f"  {dt} Defaults: {p.device_definitions[dt].get('defaults', {}).keys()}")
 except Exception as e:
     print(f"Error: {e}")

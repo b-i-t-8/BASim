@@ -79,40 +79,14 @@
     <div class="container">
         <header>
             <div class="header-top">
-                <h1>BA<span class="sim">Sim</span></h1>
-                <button class="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Toggle Menu">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </button>
-                <div class="user-info" id="user-menu">
-                    <a href="{{ url_for('index') }}" class="admin-link" title="Dashboard">[HOME] Dashboard</a>
-                    <a href="{{ url_for('topology_page') }}" class="admin-link" title="Network Topology">[NET] Topology</a>
-                    <a href="{{ url_for('protocols_page') }}" class="admin-link" title="Protocol Integration">[INT] Protocols</a>
+                <h1>BASim <span id="header-title" style="font-size: 0.5em; font-weight: normal; opacity: 0.7; margin-left: 15px;">- [Main Campus]</span></h1>
+                <div class="user-info">
+                    <a href="{{ url_for('readme_page') }}" class="admin-link" style="margin-right: 15px; text-decoration: none; color: var(--text-muted);">[DOC] Readme</a>
+                    <a href="{{ url_for('topology_page') }}" class="admin-link" style="margin-right: 15px; text-decoration: none; color: var(--text-muted);">[NET] Topology</a>
+                    <a href="{{ url_for('protocols_page') }}" class="admin-link" style="margin-right: 15px; text-decoration: none; color: var(--text-muted);">[INT] Protocols</a>
                     {% if user.role == 'admin' %}
-                    <a href="{{ url_for('admin_page') }}" class="admin-link">[CFG] Admin</a>
+                    <a href="{{ url_for('admin_config') }}" class="admin-link" style="margin-right: 15px; text-decoration: none; color: var(--text-muted);">[CFG] Admin</a>
                     {% endif %}
-                    <div class="theme-switcher" id="theme-switcher">
-                        <button class="theme-btn" onclick="toggleThemeMenu()">
-                            <span id="current-theme-icon">◐</span> Theme
-                        </button>
-                        <div class="theme-dropdown">
-                            <button class="theme-option" data-theme="matrix" onclick="setTheme('matrix')">
-                                <span class="theme-swatch matrix"></span> Matrix
-                            </button>
-                            <button class="theme-option" data-theme="ocean" onclick="setTheme('ocean')">
-                                <span class="theme-swatch ocean"></span> Ocean
-                            </button>
-                            <button class="theme-option" data-theme="midnight" onclick="setTheme('midnight')">
-                                <span class="theme-swatch midnight"></span> Midnight
-                            </button>
-                            <button class="theme-option" data-theme="light" onclick="setTheme('light')">
-                                <span class="theme-swatch light"></span> Light
-                            </button>
-                        </div>
-                    </div>
-                    <span class="user-badge {{ user.role }}">{{ user.role|upper }}</span>
-                    <span class="username">{{ user.username }}</span>
                     <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
                 </div>
             </div>

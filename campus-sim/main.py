@@ -8,7 +8,7 @@ Refactored to follow SOLID principles:
 - ISP: Interfaces are segregated (ProtocolServer, Updatable, PointProvider)
 - DIP: High-level orchestrator depends on abstractions
 """
-__version__ = "0.0.3"
+__version__ = "0.0.4"
 
 import asyncio
 import logging

@@ -152,7 +152,7 @@ class BACnetServer(ProtocolServer):
         logger.info("BACnet server stop requested")
     
     def register_point(self, name: str, initial_value: float, writable: bool = False, 
-                       point_path: str = None, object_type: str = 'AV') -> None:
+                       point_path: str = None, object_type: str = 'AV', instance_number: int = None) -> None:
         """Register a BACnet object.
         
         Args:
@@ -161,6 +161,7 @@ class BACnetServer(ProtocolServer):
             writable: Whether the point accepts writes
             point_path: Path for override manager (e.g., "central_plant/chiller_1/status")
             object_type: BACnet object type - 'AV', 'AI', 'AO', 'BV', 'BI', 'BO'
+            instance_number: Optional specific instance number
         """
         if self._app is None:
             self._initialize_app()
@@ -169,54 +170,84 @@ class BACnetServer(ProtocolServer):
         
         if object_type == 'AV':
             from bacpypes.object import AnalogValueObject
-            self._av_counter += 1
+            if instance_number is not None:
+                oid = instance_number
+            else:
+                self._av_counter += 1
+                oid = self._av_counter
+            
             obj = AnalogValueObject(
-                objectIdentifier=('analogValue', self._av_counter),
+                objectIdentifier=('analogValue', oid),
                 objectName=name,
                 presentValue=float(initial_value),
                 statusFlags=[0, 0, 0, 0],
             )
         elif object_type == 'AI':
             from bacpypes.object import AnalogInputObject
-            self._ai_counter += 1
+            if instance_number is not None:
+                oid = instance_number
+            else:
+                self._ai_counter += 1
+                oid = self._ai_counter
+                
             obj = AnalogInputObject(
-                objectIdentifier=('analogInput', self._ai_counter),
+                objectIdentifier=('analogInput', oid),
                 objectName=name,
                 presentValue=float(initial_value),
                 statusFlags=[0, 0, 0, 0],
             )
         elif object_type == 'AO':
             from bacpypes.object import AnalogOutputObject
-            self._ao_counter += 1
+            if instance_number is not None:
+                oid = instance_number
+            else:
+                self._ao_counter += 1
+                oid = self._ao_counter
+                
             obj = AnalogOutputObject(
-                objectIdentifier=('analogOutput', self._ao_counter),
+                objectIdentifier=('analogOutput', oid),
                 objectName=name,
                 presentValue=float(initial_value),
                 statusFlags=[0, 0, 0, 0],
             )
         elif object_type == 'BV':
             from bacpypes.object import BinaryValueObject
-            self._bv_counter += 1
+            if instance_number is not None:
+                oid = instance_number
+            else:
+                self._bv_counter += 1
+                oid = self._bv_counter
+                
             obj = BinaryValueObject(
-                objectIdentifier=('binaryValue', self._bv_counter),
+                objectIdentifier=('binaryValue', oid),
                 objectName=name,
                 presentValue='active' if initial_value else 'inactive',
                 statusFlags=[0, 0, 0, 0],
             )
         elif object_type == 'BI':
             from bacpypes.object import BinaryInputObject
-            self._bi_counter += 1
+            if instance_number is not None:
+                oid = instance_number
+            else:
+                self._bi_counter += 1
+                oid = self._bi_counter
+                
             obj = BinaryInputObject(
-                objectIdentifier=('binaryInput', self._bi_counter),
+                objectIdentifier=('binaryInput', oid),
                 objectName=name,
                 presentValue='active' if initial_value else 'inactive',
                 statusFlags=[0, 0, 0, 0],
             )
         elif object_type == 'BO':
             from bacpypes.object import BinaryOutputObject
-            self._bo_counter += 1
+            if instance_number is not None:
+                oid = instance_number
+            else:
+                self._bo_counter += 1
+                oid = self._bo_counter
+                
             obj = BinaryOutputObject(
-                objectIdentifier=('binaryOutput', self._bo_counter),
+                objectIdentifier=('binaryOutput', oid),
                 objectName=name,
                 presentValue='active' if initial_value else 'inactive',
                 statusFlags=[0, 0, 0, 0],

@@ -1,0 +1,18 @@
+manufacturer: Alerton
+models:
+  VAV-SD:
+    description: VisualLogic VAV Controller
+    inputs: 5
+    outputs: 5
+  VLX:
+    description: VisualLogic Global Controller
+    inputs: 0
+    outputs: 0
+  VLC-1188:
+    description: VisualLogic Controller
+    inputs: 11
+    outputs: 8
+  ACM:
+    description: Ascent Control Module
+    inputs: 0
+    outputs: 0

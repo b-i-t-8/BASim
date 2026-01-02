@@ -34,6 +34,7 @@ class PointDefinition:
     description: str = ""
     bacnet_object_type: str = "AI"  # AI, AO, BI, BO, AV, BV
     internal_key: str = ""  # Key in get_points() dict
+    bacnet_address: str = "" # e.g. "AV:3020" or just "3020" if type is inferred
 
 
 class PointMetadataProvider(ABC):

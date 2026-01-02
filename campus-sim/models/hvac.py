@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional, Tuple, Any
 from datetime import datetime
 import random
 from enum import Enum
@@ -79,6 +79,9 @@ class VAV(Updatable, PointProvider, PointMetadataProvider):
     _damper_controller: DamperController = field(default_factory=ProportionalDamperController)
     _point_path: str = ""  # Set by parent (e.g., "Building_1.AHU_1.VAV_1")
     profile: Optional[ControllerProfile] = None
+    profile_type: str = "VAV" # Profile device type key (e.g. "VAV_Reheat")
+    protocol: str = "BACnet IP" # Default protocol
+    extra_points: Dict[str, float] = field(default_factory=dict)
     
     # Writable points that can be overridden
     WRITABLE_POINTS = {'cooling_setpoint', 'heating_setpoint', 'damper_position', 'reheat_valve'}
@@ -206,8 +209,10 @@ class VAV(Updatable, PointProvider, PointMetadataProvider):
         if self.profile:
             # Get points configuration for VAV
             profile_points = {}
-            if 'VAV' in self.profile.device_types:
-                profile_points = self.profile.device_types['VAV'].get('points', {})
+            if self.profile_type in self.profile.device_definitions:
+                profile_points = self.profile.device_definitions[self.profile_type].get('points', {})
+            elif 'VAV' in self.profile.device_definitions:
+                profile_points = self.profile.device_definitions['VAV'].get('points', {})
             elif hasattr(self.profile, 'default_points'):
                 profile_points = self.profile.default_points
 
@@ -221,7 +226,8 @@ class VAV(Updatable, PointProvider, PointMetadataProvider):
                         'description': data.get('description'),
                         'units': data.get('units'),
                         'writable': data.get('writable'),
-                        'type': data.get('type')
+                        'type': data.get('type'),
+                        'address': data.get('address')
                     }
 
             # 2. Update standard points
@@ -232,6 +238,7 @@ class VAV(Updatable, PointProvider, PointMetadataProvider):
                     if mp['description']: p.description = mp['description']
                     if mp['units']: p.units = mp['units']
                     if mp['type']: p.bacnet_object_type = mp['type']
+                    if mp['address']: p.bacnet_address = mp['address']
                     # Writable status might be enforced by physics, but we can update metadata
                     if mp['writable'] is not None: p.writable = mp['writable']
                 else:
@@ -249,20 +256,14 @@ class VAV(Updatable, PointProvider, PointMetadataProvider):
                     
                 desc = pt_def.get('description', '')
                 units = pt_def.get('units', '')
-                pt_type = pt_def.get('type', 'AV')
                 writable = pt_def.get('writable', False)
+                obj_type = pt_def.get('type', 'AV')
+                address = pt_def.get('address', '')
                 
-                if any(p.name.lower() == name.lower() for p in points):
-                    continue
-                    
-                points.append(PointDefinition(
-                    name=name,
-                    units=units,
-                    writable=writable,
-                    description=desc,
-                    bacnet_object_type=pt_type,
-                    internal_key=""
-                ))
+                # Create a new point definition for this vendor-specific point
+                new_p = PointDefinition(name, units, writable, desc, obj_type, name)
+                new_p.bacnet_address = address
+                points.append(new_p)
                 
         return points
 
@@ -279,6 +280,7 @@ class VAV(Updatable, PointProvider, PointMetadataProvider):
             'cfm_actual': self.cfm_actual,
             'reheat_valve': self.reheat_valve,
             'occupancy': float(self.occupancy),
+            **self.extra_points
         }
     
     def get_points_with_override_status(self) -> Dict[str, Dict]:
@@ -316,6 +318,9 @@ class AHU(Updatable, PointProvider, PointMetadataProvider):
     heating_valve: float = 0.0  # Heating coil valve position
     _point_path: str = ""  # Set by parent (e.g., "Building_1.AHU_1")
     profile: Optional[ControllerProfile] = None
+    profile_type: str = "AHU" # Profile device type key (e.g. "AHU_VAV")
+    protocol: str = "BACnet IP" # Default protocol
+    extra_points: Dict[str, float] = field(default_factory=dict)
     
     # Writable points that can be overridden
     WRITABLE_POINTS = {'fan_status', 'fan_speed', 'outside_air_damper', 'cooling_valve', 'heating_valve', 'supply_temp_setpoint'}
@@ -486,8 +491,10 @@ class AHU(Updatable, PointProvider, PointMetadataProvider):
         if self.profile:
             # Get points configuration for AHU
             profile_points = {}
-            if 'AHU' in self.profile.device_types:
-                profile_points = self.profile.device_types['AHU'].get('points', {})
+            if self.profile_type in self.profile.device_definitions:
+                profile_points = self.profile.device_definitions[self.profile_type].get('points', {})
+            elif 'AHU' in self.profile.device_definitions:
+                profile_points = self.profile.device_definitions['AHU'].get('points', {})
             
             # 1. Create a map of internal_key -> profile_point_data
             mapped_points = {}
@@ -499,7 +506,8 @@ class AHU(Updatable, PointProvider, PointMetadataProvider):
                         'description': data.get('description'),
                         'units': data.get('units'),
                         'writable': data.get('writable'),
-                        'type': data.get('type')
+                        'type': data.get('type'),
+                        'address': data.get('address')
                     }
 
             # 2. Update standard points
@@ -510,6 +518,7 @@ class AHU(Updatable, PointProvider, PointMetadataProvider):
                     if mp['description']: p.description = mp['description']
                     if mp['units']: p.units = mp['units']
                     if mp['type']: p.bacnet_object_type = mp['type']
+                    if mp['address']: p.bacnet_address = mp['address']
                     if mp['writable'] is not None: p.writable = mp['writable']
                 else:
                     # Fallback to naming convention
@@ -528,18 +537,21 @@ class AHU(Updatable, PointProvider, PointMetadataProvider):
                 units = pt_def.get('units', '')
                 pt_type = pt_def.get('type', 'AV')
                 writable = pt_def.get('writable', False)
+                address = pt_def.get('address', '')
                 
                 if any(p.name.lower() == name.lower() for p in points):
                     continue
                     
-                points.append(PointDefinition(
+                new_p = PointDefinition(
                     name=name,
                     units=units,
                     writable=writable,
                     description=desc,
                     bacnet_object_type=pt_type,
-                    internal_key=""
-                ))
+                    internal_key=name
+                )
+                new_p.bacnet_address = address
+                points.append(new_p)
                 
         return points
 
@@ -556,6 +568,7 @@ class AHU(Updatable, PointProvider, PointMetadataProvider):
             'filter_dp': self.filter_dp,
             'cooling_valve': self.cooling_valve,
             'heating_valve': self.heating_valve,
+            **self.extra_points
         }
     
     def get_points_with_override_status(self) -> Dict[str, Dict]:
@@ -572,12 +585,193 @@ class AHU(Updatable, PointProvider, PointMetadataProvider):
         return result
 
 @dataclass
+class NetworkPort:
+    name: str
+    protocol: str # "BACnet/IP", "MS/TP", "Modbus TCP", "Modbus RTU"
+    enabled: bool = True
+
+@dataclass
+class BACnetIPPort(NetworkPort):
+    port: int = 47808
+    network_number: int = 100
+    protocol: str = "BACnet/IP"
+
+@dataclass
+class MSTPPort(NetworkPort):
+    baud_rate: int = 38400
+    mac_address: int = 1
+    network_number: int = 2001
+    max_master: int = 127
+    max_info_frames: int = 1
+    protocol: str = "MS/TP"
+
+@dataclass
+class ModbusTCPPort(NetworkPort):
+    port: int = 502
+    protocol: str = "Modbus TCP"
+
+@dataclass
+class ModbusRTUPort(NetworkPort):
+    baud_rate: int = 9600
+    parity: str = "N"
+    stop_bits: int = 1
+    protocol: str = "Modbus RTU"
+
+@dataclass
+class Gateway(Updatable, PointProvider, PointMetadataProvider):
+    """
+    Network Gateway (BACnet Router / Modbus Gateway).
+    Manages routing configuration and status.
+    """
+    id: int
+    name: str
+    gateway_type: str = "BACnet Router" # "BACnet Router", "Modbus Gateway"
+    protocol: str = "IP" # Uplink protocol
+    
+    ports: List[NetworkPort] = field(default_factory=list)
+    
+    _point_path: str = ""
+    profile: Optional[ControllerProfile] = None
+    extra_points: Dict[str, float] = field(default_factory=dict)
+    
+    def update(self, oat: float, dt: float) -> None:
+        # Gateways are static infrastructure, but we could simulate traffic load or status
+        pass
+        
+    def get_point_definitions(self) -> List[PointDefinition]:
+        points = []
+        
+        # Generate points from ports
+        for port in self.ports:
+            # Get all fields of the port object (excluding name/protocol/enabled if desired, but let's include config-like fields)
+            # We can use __dict__ or dataclasses.asdict, but let's be explicit for safety
+            
+            config_fields = {}
+            if isinstance(port, BACnetIPPort):
+                config_fields = {'port': port.port, 'network_number': port.network_number}
+            elif isinstance(port, MSTPPort):
+                config_fields = {
+                    'baud_rate': port.baud_rate, 
+                    'mac_address': port.mac_address,
+                    'network_number': port.network_number,
+                    'max_master': port.max_master
+                }
+            elif isinstance(port, ModbusTCPPort):
+                config_fields = {'port': port.port}
+            elif isinstance(port, ModbusRTUPort):
+                config_fields = {'baud_rate': port.baud_rate, 'parity': 0, 'stop_bits': port.stop_bits} # Parity mapped to int?
+            
+            for key, value in config_fields.items():
+                # Clean up key for display
+                display_key = key.replace('_', ' ').title()
+                # Create point name like "PortName_Key"
+                # e.g. MSTP_Port_1_BaudRate
+                point_name = f"{port.name}_{key.replace('_', '').title()}"
+                
+                # Determine units
+                units = "no_units"
+                if "baud" in key.lower(): units = "bps"
+                
+                # Create point definition
+                # We use a special internal key format to map back to the port config: "port:{port_name}:{config_key}"
+                internal_key = f"port:{port.name}:{key}"
+                
+                points.append(PointDefinition(
+                    name=point_name,
+                    units=units,
+                    writable=True,
+                    description=f"{port.name} {display_key}",
+                    bacnet_object_type="AV",
+                    internal_key=internal_key
+                ))
+        
+        if self.profile:
+            # Get points configuration for Gateway
+            profile_points = {}
+            if 'Gateway' in self.profile.device_definitions:
+                profile_points = self.profile.device_definitions['Gateway'].get('points', {})
+            
+            # Add vendor specific points (extra points)
+            for name, pt_def in profile_points.items():
+                description = pt_def.get('description', name)
+                units = pt_def.get('units', 'no_units')
+                writable = pt_def.get('writable', False)
+                obj_type = pt_def.get('type', 'AV')
+                address = pt_def.get('address')
+                
+                # For extra points, we use the name as the key in extra_points dict
+                points.append(PointDefinition(
+                    name=name,
+                    units=units,
+                    writable=writable,
+                    description=description,
+                    bacnet_object_type=obj_type,
+                    bacnet_address=address,
+                    internal_key=name # Map directly to extra_points key
+                ))
+                
+        return points
+
+    def get_point_value(self, internal_key: str) -> Any:
+        if internal_key.startswith("port:"):
+            parts = internal_key.split(":", 2)
+            if len(parts) == 3:
+                _, port_name, config_key = parts
+                for port in self.ports:
+                    if port.name == port_name:
+                        return getattr(port, config_key, 0.0)
+            return 0.0
+        else:
+            return self.extra_points.get(internal_key, 0.0)
+
+    def set_point_value(self, internal_key: str, value: Any) -> None:
+        if internal_key.startswith("port:"):
+            parts = internal_key.split(":", 2)
+            if len(parts) == 3:
+                _, port_name, config_key = parts
+                for port in self.ports:
+                    if port.name == port_name:
+                        if hasattr(port, config_key):
+                            setattr(port, config_key, value)
+                        return
+        else:
+            self.extra_points[internal_key] = value
+
+    def get_points(self) -> Dict[str, float]:
+        points = {}
+        # Add port points
+        for port in self.ports:
+            config_fields = {}
+            if isinstance(port, BACnetIPPort):
+                config_fields = {'port': port.port, 'network_number': port.network_number}
+            elif isinstance(port, MSTPPort):
+                config_fields = {
+                    'baud_rate': port.baud_rate, 
+                    'mac_address': port.mac_address,
+                    'network_number': port.network_number,
+                    'max_master': port.max_master
+                }
+            elif isinstance(port, ModbusTCPPort):
+                config_fields = {'port': port.port}
+            elif isinstance(port, ModbusRTUPort):
+                config_fields = {'baud_rate': port.baud_rate}
+
+            for key, value in config_fields.items():
+                internal_key = f"port:{port.name}:{key}"
+                points[internal_key] = value
+        
+        # Add extra points
+        points.update(self.extra_points)
+        return points
+
+@dataclass
 class Building(PointProvider):
     """Building containing AHUs (SRP - manages building structure)."""
     id: int
     name: str
     display_name: str = ""  # Human-friendly building name
     ahus: List[AHU] = field(default_factory=list)
+    gateways: List[Gateway] = field(default_factory=list)
     device_instance: int = 0
     floor_count: int = 1  # Number of floors
     square_footage: int = 10000  # Building size in sq ft
