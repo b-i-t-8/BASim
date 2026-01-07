@@ -652,7 +652,20 @@
                         <div class="conn-row"><span class="lbl">Hub URI</span><span class="val">${d.bacnet_sc.hub_uri}</span></div>
                         <div class="conn-row"><span class="lbl">Security</span><span class="val">${d.bacnet_sc.security}</span></div>
                         <div class="conn-row"><span class="lbl">Devices</span><span class="val">${d.bacnet_sc.devices?.length || 0} SC-enabled devices</span></div>
-                        <div class="sc-features">
+                        
+                        <div style="margin-top: 12px; padding: 10px; background: var(--bg-light); border-left: 3px solid var(--primary); font-size: 14px; color: var(--text-dim);">
+                            <strong style="color: var(--primary);">How to Connect:</strong>
+                            <div style="margin-top: 5px; line-height: 1.4;">
+                                This simulator uses a Reverse Proxy to multiplex traffic on Port 443.
+                                <ul style="margin: 5px 0 0 20px; padding: 0;">
+                                    <li><strong>Hub URL:</strong> Use the URI above. No port number is needed (defaults to 443).</li>
+                                    <li><strong>Firewall:</strong> Only requires outbound HTTPS (443).</li>
+                                    <li><strong>Certs:</strong> Download the client package below for testing certificates.</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="sc-features" style="margin-top: 12px;">
                             ${d.bacnet_sc.features.map(f => `<span class="sc-feature">${f}</span>`).join('')}
                         </div>
                         <a href="/api/bacnet-sc/config" class="download-btn">

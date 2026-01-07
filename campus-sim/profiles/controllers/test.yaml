@@ -1,0 +1,10 @@
+manufacturer: Test
+display_name: Test Widgets
+models:
+  Generic-VAV:
+    description: Generic Test VAV
+    inputs: 4
+    outputs: 4
+    input_types: [Universal Input]
+    output_types: [Universal Output]
+

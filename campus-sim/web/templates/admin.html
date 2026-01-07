@@ -298,6 +298,52 @@
             background: var(--danger);
             border-color: var(--danger);
         }
+
+        /* YAML Editor Styles */
+        .yaml-editor-container {
+            margin-top: 20px;
+        }
+        
+        .yaml-editor {
+            width: 100%;
+            height: 300px;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            padding: 10px;
+            border: 1px solid var(--border);
+            resize: vertical;
+            line-height: 1.5;
+        }
+        
+        .editor-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 0;
+        }
+        
+        .editor-tab {
+            padding: 8px 16px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-bottom: none;
+            cursor: pointer;
+            color: var(--text-muted);
+        }
+        
+        .editor-tab.active {
+            background: var(--card-bg);
+            color: var(--primary);
+            border-top: 2px solid var(--primary);
+        }
+        
+        .editor-actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 10px;
+            gap: 10px;
+        }
         
         .nav-back {
             display: inline-flex;
@@ -311,6 +357,12 @@
         
         .nav-back:hover {
             color: var(--primary);
+        }
+
+        /* Generation Config Section */
+        .generation-config-section {
+            grid-column: 1 / -1;
+            margin-top: 20px;
         }
         
         .map-preview {
@@ -718,12 +770,35 @@
         <div class="admin-tabs">
             <a href="{{ url_for('admin_config') }}" class="tab-link {% if active_page == 'config' %}active{% endif %}">Configuration</a>
             <a href="{{ url_for('admin_simulation') }}" class="tab-link {% if active_page == 'simulation' %}active{% endif %}">Simulation Parameters</a>
-            <a href="{{ url_for('admin_profiles') }}" class="tab-link {% if active_page == 'profiles' %}active{% endif %}">Equipment & Controllers</a>
+            <a href="{{ url_for('admin_profiles') }}" class="tab-link {% if active_page == 'profiles' %}active{% endif %}">Device Library</a>
+            <!-- <a href="{{ url_for('admin_templates') }}" class="tab-link {% if active_page == 'templates' %}active{% endif %}">Haystack Templates</a> -->
         </div>
         
         <!-- Configuration Tab -->
         <div id="tab-config" class="tab-content {% if active_page == 'config' %}active{% endif %}">
         <div class="admin-container">
+            <!-- Generation Config -->
+            <div class="config-card generation-config-section">
+                <h2>GENERATION CONFIGURATION</h2>
+                <p style="margin-bottom: 15px; opacity: 0.9; font-size: 0.95rem;">
+                    Edit the YAML configuration files that control campus generation.
+                </p>
+                
+                <div class="editor-tabs">
+                    <button class="editor-tab active" onclick="switchEditorTab('campus_names.yaml')">Campus Names</button>
+                    <button class="editor-tab" onclick="switchEditorTab('building_rules.yaml')">Building Rules</button>
+                </div>
+                
+                <div class="yaml-editor-container">
+                    <textarea id="yaml-editor" class="yaml-editor" spellcheck="false"></textarea>
+                </div>
+                
+                <div class="editor-actions">
+                    <button class="btn btn-secondary" onclick="loadGenerationConfig()">Reload</button>
+                    <button class="btn btn-primary" onclick="saveGenerationConfig()">Save Changes</button>
+                </div>
+            </div>
+
             <!-- Simulation Time -->
             <div class="config-card">
                 <h2>SIMULATION TIME</h2>
@@ -746,10 +821,6 @@
             <!-- Random Generation -->
             <div class="config-card seed-section">
                 <h2>RANDOM GENERATOR</h2>
-                <p style="margin-bottom: 20px; opacity: 0.9; font-size: 1.05rem;">
-                    Enter a seed to generate a random campus anywhere in the world. 
-                    Same seed = same campus every time!
-                </p>
                 
                 <div class="form-group">
                     <label for="seed">Seed (any text)</label>
@@ -972,42 +1043,100 @@
             </div>
         </div>
 
-        <!-- Equipment & Controllers Tab -->
+        <!-- Equipment & Controllers (Device Library) Tab -->
         <div id="tab-profiles" class="tab-content {% if active_page == 'profiles' %}active{% endif %}">
             
             <!-- Sub-Navigation for Equipment/Controllers -->
             <div class="controller-tabs" style="margin-bottom: 20px; border-bottom: 1px solid var(--border);">
                 <button class="controller-tab-btn active" onclick="showLibrarySubTab('equipment')" id="subtab-btn-equipment">Equipment</button>
                 <button class="controller-tab-btn" onclick="showLibrarySubTab('controllers')" id="subtab-btn-controllers">Controllers</button>
+                <button class="controller-tab-btn" onclick="showLibrarySubTab('templates')" id="subtab-btn-templates">Templates</button>
             </div>
 
             <!-- Equipment Profiles Section -->
             <div id="library-equipment" class="library-section">
-                <div class="config-card" style="margin-bottom: 20px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <h2>EQUIPMENT PROFILES</h2>
-                        <button class="btn btn-primary" onclick="if(currentProfileId) showAddDeviceTypeModal(currentProfileId); else showToast('No profile selected', 'error');">+ Add Type</button>
+                <div class="config-card">
+                   <div style="display: flex; gap: 20px; height: 600px;">
+                        <div style="width: 250px; display: flex; flex-direction: column; gap: 10px;">
+                            <div style="display: flex; gap: 5px;">
+                                <input type="text" id="new-equip-filename" placeholder="new_profile" style="flex: 1; min-width: 0;">
+                                <button class="btn btn-primary" onclick="createNewFile('equipment')">+</button>
+                            </div>
+                            <div id="equipment-file-list" style="flex: 1; border: 1px solid var(--border); overflow-y: auto;">
+                                <!-- List Items -->
+                            </div>
+                        </div>
+                        <div style="flex: 1; display: flex; flex-direction: column; gap: 10px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <label style="font-weight: bold;" id="equip-editor-label">Select a file...</label>
+                            </div>
+                            <div class="form-group" style="flex: 1; display: flex; flex-direction: column;">
+                                <textarea id="equipment-editor" style="flex: 1; font-family: monospace; background: var(--bg); color: #d4d4d4; border: 1px solid var(--border); padding: 10px; resize: none;"></textarea>
+                            </div>
+                            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                                <button class="btn btn-danger" onclick="deleteFile('equipment')">Delete File</button>
+                                <button class="btn btn-primary" onclick="saveFile('equipment')">Save Changes</button>
+                            </div>
+                        </div>
                     </div>
-                    <p style="color: var(--text-muted); font-size: 1.0rem; margin-bottom: 15px;">
-                        Configure the rules used when generating new equipment.
-                    </p>
-                </div>
-                
-                <div id="device-profiles-container">
-                    <div id="manufacturer-profiles-container"></div>
                 </div>
             </div>
 
             <!-- Controllers Section -->
             <div id="library-controllers" class="library-section" style="display: none;">
-                <div class="config-card" style="margin-bottom: 20px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <h2>CONTROLLER LIBRARY</h2>
-                        <button class="btn btn-primary" onclick="showAddControllerModal()">+ Add Controller</button>
+                <div class="config-card">
+                   <div style="display: flex; gap: 20px; height: 600px;">
+                        <div style="width: 250px; display: flex; flex-direction: column; gap: 10px;">
+                            <div style="display: flex; gap: 5px;">
+                                <input type="text" id="new-controllers-filename" placeholder="new_controller" style="flex: 1; min-width: 0;">
+                                <button class="btn btn-primary" onclick="createNewFile('controllers')">+</button>
+                            </div>
+                            <div id="controllers-file-list" style="flex: 1; border: 1px solid var(--border); overflow-y: auto;">
+                                <!-- List Items -->
+                            </div>
+                        </div>
+                        <div style="flex: 1; display: flex; flex-direction: column; gap: 10px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <label style="font-weight: bold;" id="controllers-editor-label">Select a file...</label>
+                            </div>
+                            <div class="form-group" style="flex: 1; display: flex; flex-direction: column;">
+                                <textarea id="controllers-editor" style="flex: 1; font-family: monospace; background: var(--bg); color: #d4d4d4; border: 1px solid var(--border); padding: 10px; resize: none;"></textarea>
+                            </div>
+                            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                                <button class="btn btn-danger" onclick="deleteFile('controllers')">Delete File</button>
+                                <button class="btn btn-primary" onclick="saveFile('controllers')">Save Changes</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div id="controllers-list-container">
-                    <p>Loading controllers...</p>
+            </div>
+
+            <!-- Templates Section (Moved here) -->
+            <div id="library-templates" class="library-section" style="display: none;">
+                <div class="config-card">
+                    <h2>TEMPLATE LIBRARY</h2>
+                    <div class="template-container" style="display: flex; gap: 20px; height: 600px;">
+                        <div style="width: 250px; display: flex; flex-direction: column; gap: 10px;">
+                            <button class="btn btn-primary" onclick="createNewTemplate()">+ New Template</button>
+                            <div id="template-list" style="flex: 1; border: 1px solid var(--border); overflow-y: auto;">
+                                <!-- List Items -->
+                            </div>
+                        </div>
+                        <div style="flex: 1; display: flex; flex-direction: column; gap: 10px;">
+                            <div class="form-group">
+                                <label>Template Key Name</label>
+                                <input type="text" id="template-key" placeholder="e.g. VAV_CoolingOnly">
+                            </div>
+                            <div class="form-group" style="flex: 1; display: flex; flex-direction: column;">
+                                <label>Template Definition (YAML)</label>
+                                <textarea id="template-editor" style="flex: 1; font-family: monospace; background: var(--bg); color: #d4d4d4; border: 1px solid var(--border); padding: 10px; resize: none;"></textarea>
+                            </div>
+                            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                                <button class="btn btn-danger" onclick="deleteTemplate()">Delete Template</button>
+                                <button class="btn btn-primary" onclick="saveCurrentTemplate()">Save Template</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1038,6 +1167,18 @@
                         <option value="Modbus RTU">Modbus RTU</option>
                     </select>
                 </div>
+
+                <div class="form-group" style="background: rgba(var(--primary-rgb), 0.1); padding: 10px; border: 1px dashed var(--primary);">
+                    <label for="editTemplate" style="color: var(--primary);">Haystack Template (Optional)</label>
+                    <div style="display: flex; gap: 10px;">
+                        <select id="editTemplate" class="form-control" style="flex: 1;">
+                            <option value="">-- None (Custom) --</option>
+                            <!-- Populated by JS -->
+                        </select>
+                        <button class="btn btn-sm btn-primary" onclick="applyTemplate()">Load Points</button>
+                    </div>
+                    <small style="color: var(--text-dim);">Applying a template will overwrite existing point mappings.</small>
+                </div>
                 
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                     <h4>Points</h4>
@@ -1048,13 +1189,14 @@
                     <table class="override-table" id="editPointsTable" style="width: 100%;">
                         <thead>
                             <tr>
-                                <th style="width: 20%">Name</th>
+                                <th style="width: 15%">Name</th>
                                 <th style="width: 10%">Address</th>
                                 <th style="width: 10%">Type</th>
                                 <th style="width: 15%">Mapping</th>
+                                <th style="width: 10%">Tags</th>
                                 <th style="width: 5%">W</th>
                                 <th style="width: 10%">Value</th>
-                                <th style="width: 20%">Description</th>
+                                <th style="width: 15%">Description</th>
                                 <th style="width: 5%">Units</th>
                                 <th style="width: 5%">Action</th>
                             </tr>
@@ -1068,6 +1210,34 @@
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeEditDeviceTypeModal()">Cancel</button>
                 <button class="btn btn-primary" onclick="saveDeviceType()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Profile Modal -->
+    <div id="addProfileModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3>Add New Profile</h3>
+                <span class="close" onclick="closeAddProfileModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="newProfileName">Profile Name</label>
+                    <input type="text" id="newProfileName" placeholder="e.g. Delta Controls">
+                </div>
+                <div class="form-group">
+                    <label for="newProfileManufacturer">Manufacturer</label>
+                    <input type="text" id="newProfileManufacturer" placeholder="e.g. Delta Controls">
+                </div>
+                <div class="form-group">
+                    <label for="newProfileDescription">Description</label>
+                    <input type="text" id="newProfileDescription" placeholder="e.g. Standard Delta Controls Profile">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeAddProfileModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveNewProfile()">Create Profile</button>
             </div>
         </div>
     </div>
@@ -1089,6 +1259,12 @@
                 <div class="form-group">
                     <label for="addDeviceTypeName">Equipment Type Name</label>
                     <input type="text" id="addDeviceTypeName" placeholder="e.g. VAV, AHU, Chiller">
+                </div>
+                <div class="form-group">
+                    <label for="addDeviceTypeTemplate">Template (Optional)</label>
+                    <select id="addDeviceTypeTemplate" class="form-control" style="width: 100%;" onchange="autoFillDeviceDetails(this.value)">
+                        <option value="">-- None (Custom) --</option>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label for="addDeviceTypeDescription">Description</label>
@@ -1140,6 +1316,13 @@
         </div>
     </div>
     
+
+    <!-- TEMPLATES TAB (REMOVED - INTEGRATED INTO PROFILES) -->
+    <!--
+    <div id="tab-templates" class="container tab-content {% if active_page == 'templates' %}active{% endif %}">
+        ...
+    </div>
+    -->
     <div class="toast" id="toast"></div>
     
     <script>
@@ -1174,7 +1357,9 @@
                 { key: 'fan_status', label: 'Fan Status' },
                 { key: 'cooling_valve', label: 'Cooling Valve' },
                 { key: 'heating_valve', label: 'Heating Valve' },
-                { key: 'filter_dp', label: 'Filter DP' }
+                { key: 'filter_dp', label: 'Filter DP' },
+                { key: 'duct_static', label: 'Duct Static Pressure' },
+                { key: 'static_setpoint', label: 'Duct Static Setpoint' }
             ],
             'FCU': [
                 { key: '', label: 'None (Static/Virtual)' },
@@ -1201,6 +1386,20 @@
         };
 
         
+        let loadedTemplates = {};
+
+        async function loadTemplates() {
+            try {
+                const response = await apiRequest('/api/admin/templates');
+                if (response && response.ok) {
+                    loadedTemplates = await response.json();
+                    console.log('Loaded templates:', loadedTemplates);
+                }
+            } catch (error) {
+                console.warn('Failed to load templates:', error);
+            }
+        }
+
         // Tab switching (Legacy - now handled by server routing)
         function showTab(tabName) {
             // No-op
@@ -1211,35 +1410,21 @@
             loadUnitSystem();
             loadCampusName();
             loadConfig();
+            loadTemplates();
             loadLocations();
             updateHeaderStatus();
             setInterval(updateHeaderStatus, 5000);
 
             // Load data based on active page
             const activePage = '{{ active_page }}';
-            const activeProfile = '{{ active_profile|default("", true) }}';
-
+            
             if (activePage === 'simulation') {
                 loadSimulationParams();
             } else if (activePage === 'profiles') {
                 const urlParams = new URLSearchParams(window.location.search);
-                const view = urlParams.get('view');
-
-                if (view === 'controllers') {
-                    showLibrarySubTab('controllers').then(() => {
-                        if (activeProfile) {
-                            showControllerTab(activeProfile);
-                        }
-                    });
-                } else {
-                    showLibrarySubTab('equipment');
-                    loadProfiles().then(() => {
-                        if (activeProfile) {
-                            showProfileTab(activeProfile);
-                        }
-                    });
-                }
-                loadSimulationParams(); // Also load gen params
+                const view = urlParams.get('view') || 'equipment';
+                showLibrarySubTab(view);
+                loadSimulationParams();
             }
         });
 
@@ -2034,6 +2219,7 @@
                             
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; border-bottom: 1px solid var(--border); padding-bottom: 5px;">
                                 <h4 style="margin: 0;">Equipment Types</h4>
+                                <button class="btn btn-sm btn-primary" onclick="showAddDeviceTypeModal('${p.id}')">+ Add Type</button>
                             </div>
                             ${deviceTypesHtml}
                         </div>
@@ -2312,11 +2498,36 @@
                 option.text = "No profiles loaded";
                 select.appendChild(option);
             }
+            
+            // Populate templates
+            const tmplSelect = document.getElementById('addDeviceTypeTemplate');
+            tmplSelect.innerHTML = '<option value="">-- None (Custom) --</option>';
+            if (loadedTemplates) {
+                Object.keys(loadedTemplates).sort().forEach(key => {
+                    const tmpl = loadedTemplates[key];
+                    const option = document.createElement('option');
+                    option.value = key;
+                    option.text = `${key} - ${tmpl.description}`;
+                    tmplSelect.appendChild(option);
+                });
+            }
 
             document.getElementById('addDeviceTypeName').value = '';
             document.getElementById('addDeviceTypeDescription').value = '';
             document.getElementById('addDeviceTypeModal').style.display = 'block';
             document.getElementById('addDeviceTypeName').focus();
+        }
+        
+        function autoFillDeviceDetails(templateId) {
+            if (!templateId || !loadedTemplates[templateId]) return;
+            const tmpl = loadedTemplates[templateId];
+            
+            const nameInput = document.getElementById('addDeviceTypeName');
+            // Only autofill name if empty or looks like another template name
+            // Currently we won't overwrite name to allow user customization like "VAV-ModelX"
+            
+            const descInput = document.getElementById('addDeviceTypeDescription');
+            descInput.value = tmpl.description || '';
         }
 
         function closeAddDeviceTypeModal() {
@@ -2327,6 +2538,7 @@
             const profileId = document.getElementById('addDeviceTypeProfileSelect').value;
             const typeName = document.getElementById('addDeviceTypeName').value.trim();
             const description = document.getElementById('addDeviceTypeDescription').value.trim();
+            const template = document.getElementById('addDeviceTypeTemplate').value;
 
             if (!profileId) {
                 showToast('Please select a manufacturer profile', 'error');
@@ -2339,17 +2551,22 @@
             }
 
             closeAddDeviceTypeModal();
-            await addDeviceType(profileId, typeName, description);
+            await addDeviceType(profileId, typeName, description, template);
         }
 
-        async function addDeviceType(profileId, typeName, description) {
+        async function addDeviceType(profileId, typeName, description, template = null) {
             try {
+                const body = {
+                    device_type: typeName,
+                    description: description
+                };
+                if (template) {
+                    body.template = template;
+                }
+                
                 const response = await apiRequest(`/api/admin/profiles/${profileId}/device-types`, {
                     method: 'POST',
-                    body: JSON.stringify({
-                        device_type: typeName,
-                        description: description
-                    })
+                    body: JSON.stringify(body)
                 });
                 
                 if (response && response.ok) {
@@ -2377,6 +2594,19 @@
             document.getElementById('editDeviceTypeTitle').textContent = `Edit Device Type: ${deviceTypeId}`;
             document.getElementById('editDescription').value = deviceType.description || '';
             document.getElementById('editProtocol').value = deviceType.protocol || 'BACnet IP';
+
+            // Populate Templates
+            const tplSelect = document.getElementById('editTemplate');
+            tplSelect.innerHTML = '<option value="">-- None (Custom) --</option>';
+            // Sort templates to put match first if possible
+            const templates = Object.keys(loadedTemplates || {}).sort();
+            templates.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t;
+                opt.text = t;
+                tplSelect.appendChild(opt);
+            });
+            tplSelect.value = deviceType.template || '';
             
             const tbody = document.querySelector('#editPointsTable tbody');
             tbody.innerHTML = '';
@@ -2392,11 +2622,93 @@
             
             document.getElementById('editDeviceTypeModal').style.display = 'block';
         }
+
+        async function applyTemplate() {
+            const templateName = document.getElementById('editTemplate').value;
+            if (!templateName) return;
+            
+            if (!confirm('This will overwrite current points. Continue?')) return;
+            
+            // Logic to get template points (we might need to fetch them if not fully loaded or use loadedTemplates)
+            // loadedTemplates seems to contain the full definition from haystack_definitions.yaml
+            
+            const template = loadedTemplates[templateName];
+            if (!template || !template.points) {
+                showToast('Template definition not found', 'error');
+                return;
+            }
+            
+            const tbody = document.querySelector('#editPointsTable tbody');
+            tbody.innerHTML = ''; // Clear existing
+            
+            // Add rows based on template
+            for (const [key, pt] of Object.entries(template.points)) {
+                // Determine a friendly name for the hardware point (e.g. key is 'room_temp' -> Name 'RoomTemp')
+                // Ideally prompt user or use PascalCase of key
+                const hardwareName = key.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
+                
+                addPointRow({
+                    name: hardwareName,
+                    description: pt.description || '',
+                    units: pt.unit || '',
+                    type: pt.kind === 'Bool' ? 'BV' : 'AV', // Guess type
+                    writable: pt.writable || false,
+                    value: pt.val || '',
+                    mapping: key, // The key IS the mapping in standardization
+                    haystack_tags: pt.tags || []
+                });
+            }
+            showToast('Template applied! Please set addresses.', 'success');
+        }
         
         function closeEditDeviceTypeModal() {
             document.getElementById('editDeviceTypeModal').style.display = 'none';
         }
         
+        function showAddProfileModal() {
+            document.getElementById('newProfileName').value = '';
+            document.getElementById('newProfileManufacturer').value = '';
+            document.getElementById('newProfileDescription').value = '';
+            document.getElementById('addProfileModal').style.display = 'block';
+        }
+
+        function closeAddProfileModal() {
+            document.getElementById('addProfileModal').style.display = 'none';
+        }
+
+        async function saveNewProfile() {
+            const name = document.getElementById('newProfileName').value.trim();
+            const manufacturer = document.getElementById('newProfileManufacturer').value.trim();
+            const description = document.getElementById('newProfileDescription').value.trim();
+
+            if (!name || !manufacturer) {
+                showToast('Name and Manufacturer are required', 'error');
+                return;
+            }
+
+            try {
+                const response = await apiRequest('/api/admin/profiles', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        name: name,
+                        manufacturer: manufacturer,
+                        description: description
+                    })
+                });
+
+                if (response && response.ok) {
+                    showToast('Profile created successfully', 'success');
+                    closeAddProfileModal();
+                    loadProfiles();
+                } else {
+                    const err = await response.json();
+                    showToast('Failed to create profile: ' + (err.error || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                showToast('Error: ' + error.message, 'error');
+            }
+        }
+
         function addPointRow(data = {}) {
             const tbody = document.querySelector('#editPointsTable tbody');
             const tr = document.createElement('tr');
@@ -2410,6 +2722,7 @@
             const units = data.units || '';
             const mapping = data.mapping || '';
             const value = data.value !== undefined ? data.value : '';
+            const tags = data.haystack_tags ? data.haystack_tags.join(' ') : '';
             
             // Get available mappings for this device type
             const deviceTypeId = document.getElementById('editDeviceTypeId').value;
@@ -2442,6 +2755,7 @@
                     </select>
                 </td>
                 <td>${mappingHtml}</td>
+                <td><input type="text" class="point-tags" value="${tags}" placeholder="tags" style="font-size: 0.8em; color: #aaa;" readonly title="Read-only Haystack tags from template"></td>
                 <td style="text-align: center;"><input type="checkbox" class="point-writable" ${writable}></td>
                 <td><input type="text" class="point-value" value="${value}" placeholder="Value" style="width: 60px;"></td>
                 <td><input type="text" class="point-desc" value="${description}" placeholder="Description"></td>
@@ -2461,6 +2775,7 @@
             const deviceTypeId = document.getElementById('editDeviceTypeId').value;
             const description = document.getElementById('editDescription').value;
             const protocol = document.getElementById('editProtocol').value;
+            const template = document.getElementById('editTemplate').value;
             
             const points = {};
             document.querySelectorAll('#editPointsTable tbody tr').forEach(tr => {
@@ -2488,6 +2803,7 @@
                     body: JSON.stringify({
                         description: description,
                         protocol: protocol,
+                        template: template,
                         points: points
                     })
                 });
@@ -2637,22 +2953,32 @@
 
         // --- Controller Management ---
 
+        // Tracks currently selected file for each category
+        let currentFiles = {
+            equipment: null,
+            controllers: null
+        };
+
         function showLibrarySubTab(tabName) {
             // Hide all library sections
             document.querySelectorAll('.library-section').forEach(el => el.style.display = 'none');
             
             // Show selected section
-            document.getElementById('library-' + tabName).style.display = 'block';
+            const section = document.getElementById('library-' + tabName);
+            if (section) section.style.display = 'block';
             
             // Update buttons
-            document.querySelectorAll('#subtab-btn-equipment, #subtab-btn-controllers').forEach(el => {
-                el.classList.remove('active');
+            document.querySelectorAll('#subtab-btn-equipment, #subtab-btn-controllers, #subtab-btn-templates').forEach(el => {
+                if(el) el.classList.remove('active');
             });
-            document.getElementById('subtab-btn-' + tabName).classList.add('active');
+            const btn = document.getElementById('subtab-btn-' + tabName);
+            if(btn) btn.classList.add('active');
 
             // Load data if needed
-            if (tabName === 'controllers') {
-                return loadControllers();
+            if (tabName === 'templates') {
+                return loadTemplatesForManager();
+            } else if (tabName === 'equipment' || tabName === 'controllers') {
+                return loadFiles(tabName);
             }
 
             // Update URL
@@ -2660,214 +2986,273 @@
             const currentView = url.searchParams.get('view');
             
             // Only update history if the view is actually changing (user clicked tab)
-            // This prevents overwriting the URL on initial load
             if (currentView !== tabName) {
-                // Reset to base path to avoid mismatch with default selected tab
                 const newUrl = new URL(window.location.origin + '/admin/profiles');
                 newUrl.searchParams.set('view', tabName);
                 history.pushState({}, '', newUrl);
             }
         }
-
-        async function loadControllers() {
-            const container = document.getElementById('controllers-list-container');
+        
+        async function loadFiles(category) {
+            const listContainer = document.getElementById(category + '-file-list');
+            listContainer.innerHTML = '<p style="padding: 10px; color: var(--text-muted);">Loading...</p>';
+            
             try {
-                container.innerHTML = '<p style="color: var(--text-muted);">Loading controllers...</p>';
-                const response = await apiRequest('/api/admin/controllers');
+                const response = await apiRequest('/api/admin/files/' + category);
                 if (response && response.ok) {
-                    const controllers = await response.json();
-                    renderControllers(controllers);
+                    const files = await response.json();
+                    renderFileList(category, files);
                 } else {
-                    container.innerHTML = '<p style="color: var(--error);">Failed to load controllers.</p>';
+                    const statusText = response ? `(${response.status} ${response.statusText})` : '(No Response)';
+                    listContainer.innerHTML = `<p style="padding: 10px; color: var(--error);">Failed to load files ${statusText}.</p>`;
+                    if(response) console.error("Load files failed:", response);
                 }
             } catch (error) {
-                console.error('Failed to load controllers:', error);
-                container.innerHTML = `<p style="color: var(--error);">Error: ${error.message}</p>`;
+                console.error('Failed to load files:', error);
+                listContainer.innerHTML = `<p style="padding: 10px; color: var(--error);">Error loading files: ${error.message}</p>`;
             }
         }
 
-        function renderControllers(controllers) {
-            const container = document.getElementById('controllers-list-container');
-            if (!controllers || controllers.length === 0) {
-                container.innerHTML = '<p>No controllers found.</p>';
+        function renderFileList(category, files) {
+            const list = document.getElementById(category + '-file-list');
+            list.innerHTML = '';
+            
+            if (!files || files.length === 0) {
+                list.innerHTML = '<p style="padding: 10px; color: var(--text-muted);">No files found.</p>';
                 return;
             }
-
-            // Group by manufacturer
-            const grouped = {};
-            controllers.forEach(c => {
-                if (!grouped[c.manufacturer]) {
-                    grouped[c.manufacturer] = [];
+            
+            files.forEach(fileObj => {
+                // Handle both old format (string) and new format (object)
+                let filename, displayName;
+                if (typeof fileObj === 'string') {
+                    filename = fileObj;
+                    displayName = filename.replace(/\.(yaml|yml)$/i, '');
+                    displayName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
+                } else {
+                    filename = fileObj.filename;
+                    displayName = fileObj.display_name || filename;
                 }
-                grouped[c.manufacturer].push(c);
-            });
 
-            const manufacturers = Object.keys(grouped).sort();
-
-            // Create tabs
-            let tabsHtml = '<div class="controller-tabs">';
-            manufacturers.forEach((m, index) => {
-                const active = index === 0 ? 'active' : '';
-                // Use a safe ID for the tab
-                const safeId = m.replace(/[^a-zA-Z0-9]/g, '_');
-                tabsHtml += `<button class="controller-tab-btn ${active}" onclick="showControllerTab('${safeId}')">${m}</button>`;
-            });
-            tabsHtml += '</div>';
-
-            // Create content
-            let contentHtml = '';
-            manufacturers.forEach((m, index) => {
-                const safeId = m.replace(/[^a-zA-Z0-9]/g, '_');
-                const display = index === 0 ? 'block' : 'none';
+                const div = document.createElement('div');
+                div.className = 'file-item';
+                div.style.padding = '8px 12px';
+                div.style.cursor = 'pointer';
+                div.style.borderBottom = '1px solid var(--border)';
+                div.style.display = 'flex';
+                div.style.justifyContent = 'space-between';
+                div.setAttribute('data-filename', filename);
                 
-                contentHtml += `<div id="controller-tab-${safeId}" class="controller-content" style="display: ${display};">`;
-                contentHtml += `
-                    <table class="override-table" style="width: 100%; margin-top: 15px;">
-                        <thead>
-                            <tr>
-                                <th>Model</th>
-                                <th>Description</th>
-                                <th>Inputs</th>
-                                <th>Outputs</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                `;
-
-                grouped[m].forEach(c => {
-                    contentHtml += `
-                        <tr>
-                            <td><strong>${c.name}</strong></td>
-                            <td>${c.description}</td>
-                            <td>${c.inputs}</td>
-                            <td>${c.outputs}</td>
-                            <td>
-                                <button class="btn btn-sm btn-secondary" onclick='showEditControllerModal(${JSON.stringify(c)})'>Edit</button>
-                                <button class="btn btn-sm btn-danger" onclick="deleteController('${c.name}')">Delete</button>
-                            </td>
-                        </tr>
-                    `;
-                });
-
-                contentHtml += `
-                        </tbody>
-                    </table>
-                </div>
-                `;
-            });
-
-            container.innerHTML = tabsHtml + contentHtml;
-        }
-
-        function showControllerTab(manufacturerId) {
-            // Hide all contents
-            document.querySelectorAll('.controller-content').forEach(el => el.style.display = 'none');
-            // Show selected content
-            const content = document.getElementById('controller-tab-' + manufacturerId);
-            if (content) content.style.display = 'block';
-            
-            // Update tabs
-            document.querySelectorAll('.controller-tab-btn').forEach(el => {
-                el.classList.remove('active');
-            });
-            
-            // Find the button that was clicked
-            const buttons = document.querySelectorAll('.controller-tab-btn');
-            for (let btn of buttons) {
-                if (btn.getAttribute('onclick').includes(`'${manufacturerId}'`)) {
-                    btn.classList.add('active');
-                    break;
+                if (filename === currentFiles[category]) {
+                    div.style.background = 'var(--primary-dim)';
                 }
-            }
-
-            // Update URL
-            const url = new URL(window.location.origin + `/admin/profiles/${manufacturerId}`);
-            url.searchParams.set('view', 'controllers');
-            if (window.location.href !== url.href) {
-                history.pushState({ manufacturerId: manufacturerId }, '', url);
-            }
+                
+                const nameSpan = document.createElement('span');
+                nameSpan.textContent = displayName;
+                div.appendChild(nameSpan);
+                
+                div.onclick = () => selectFile(category, filename);
+                list.appendChild(div);
+            });
         }
 
-        function showAddControllerModal() {
-            document.getElementById('editControllerTitle').textContent = 'Add Controller';
-            document.getElementById('ctrlManufacturer').value = '';
-            document.getElementById('ctrlName').value = '';
-            document.getElementById('ctrlName').disabled = false;
-            document.getElementById('ctrlDescription').value = '';
-            document.getElementById('ctrlInputs').value = 0;
-            document.getElementById('ctrlOutputs').value = 0;
+        async function selectFile(category, filename) {
+            currentFiles[category] = filename;
+            const editor = document.getElementById(category + '-editor');
+            const label = document.getElementById(category + '-editor-label');
             
-            document.getElementById('editControllerModal').style.display = 'block';
-        }
-
-        function showEditControllerModal(c) {
-            document.getElementById('editControllerTitle').textContent = 'Edit Controller';
-            document.getElementById('ctrlManufacturer').value = c.manufacturer;
-            document.getElementById('ctrlName').value = c.name;
-            document.getElementById('ctrlName').disabled = true; // Cannot change ID
-            document.getElementById('ctrlDescription').value = c.description;
-            document.getElementById('ctrlInputs').value = c.inputs;
-            document.getElementById('ctrlOutputs').value = c.outputs;
+            if(label) label.textContent = filename;
             
-            document.getElementById('editControllerModal').style.display = 'block';
-        }
+            // Update UI selection
+            document.querySelectorAll(`#${category}-file-list .file-item`).forEach(el => {
+                if (el.getAttribute('data-filename') === filename) {
+                    el.style.background = 'var(--primary-dim)';
+                } else {
+                    el.style.background = '';
+                }
+            });
 
-        function closeEditControllerModal() {
-            document.getElementById('editControllerModal').style.display = 'none';
-        }
-
-        async function saveController() {
-            const data = {
-                manufacturer: document.getElementById('ctrlManufacturer').value,
-                name: document.getElementById('ctrlName').value,
-                description: document.getElementById('ctrlDescription').value,
-                inputs: document.getElementById('ctrlInputs').value,
-                outputs: document.getElementById('ctrlOutputs').value
-            };
-
-            if (!data.manufacturer || !data.name) {
-                showToast('Manufacturer and Name are required', 'error');
-                return;
-            }
+            editor.value = "Loading...";
+            editor.disabled = true;
 
             try {
-                const response = await apiRequest('/api/admin/controllers', {
-                    method: 'POST',
-                    body: JSON.stringify(data)
-                });
+                const response = await apiRequest(`/api/admin/files/${category}/${encodeURIComponent(filename)}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    editor.value = data.content || "";
+                } else {
+                    editor.value = "# Error loading file";
+                }
+            } catch (e) {
+                editor.value = "# Error: " + e.message;
+            } finally {
+                editor.disabled = false;
+            }
+        }
 
+        async function createNewFile(category) {
+            let name = document.getElementById('new-' + category + '-filename').value;
+             if (!name) {
+                name = prompt("Enter filename (e.g. MyDevice):");
+            }
+            if (!name) return;
+            if (!name.endsWith('.yaml') && !name.endsWith('.yml')) {
+                name += '.yaml';
+            }
+            
+            // Basic template
+            const defaultContent = category === 'equipment' ? 
+`# Equipment Profile: ${name}
+manufacturer: Generic
+model: ${name.replace('.yaml', '')}
+description: New equipment profile
+
+points:
+  status:
+    kind: Boolean
+    unit: null
+` : 
+`# Controller Profile: ${name}
+manufacturer: Generic
+models:
+  ${name.replace('.yaml', '')}:
+    description: New controller profile
+    inputs: 4
+    outputs: 4
+    input_types: [Universal Input]
+    output_types: [Universal Output]
+`;
+
+            // Create file via save
+            try {
+                const response = await apiRequest(`/api/admin/files/${category}/${encodeURIComponent(name)}`, {
+                     method: 'POST',
+                     body: JSON.stringify({ content: defaultContent })
+                });
+                
+                if (response.ok) {
+                    document.getElementById('new-' + category + '-filename').value = '';
+                    await loadFiles(category);
+                    selectFile(category, name);
+                    showToast('File created successfully', 'success');
+                } else {
+                    const err = await response.json();
+                    showToast('Error creating file: ' + (err.error || 'Unknown'), 'error');
+                }
+            } catch (e) {
+                 showToast('Error: ' + e.message, 'error');
+            }
+        }
+
+        async function saveFile(category) {
+            const filename = currentFiles[category];
+            if (!filename) return;
+            
+            const content = document.getElementById(category + '-editor').value;
+            
+            try {
+                const response = await apiRequest(`/api/admin/files/${category}/${encodeURIComponent(filename)}`, {
+                    method: 'POST',
+                    body: JSON.stringify({ content: content })
+                });
+                
+                if (response.ok) {
+                    showToast('File saved successfully', 'success');
+                } else {
+                    const err = await response.json();
+                    showToast('Error saving file: ' + (err.error || 'Unknown'), 'error');
+                }
+            } catch (error) {
+                showToast('Error saving file: ' + error.message, 'error');
+            }
+        }
+
+        async function deleteFile(category) {
+            const filename = currentFiles[category];
+            if (!filename) return;
+            if (!confirm(`Delete ${filename}?`)) return;
+            
+            try {
+                const response = await apiRequest(`/api/admin/files/${category}/${encodeURIComponent(filename)}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    currentFiles[category] = null;
+                    document.getElementById(category + '-editor').value = '';
+                    if(document.getElementById(category + '-editor-label'))
+                        document.getElementById(category + '-editor-label').textContent = 'Select a file...';
+                    
+                    await loadFiles(category);
+                    showToast('File deleted successfully', 'success');
+                } else {
+                    const err = await response.json();
+                    showToast('Error deleting file: ' + (err.error || 'Unknown'), 'error');
+                }
+            } catch (error) {
+                showToast('Error: ' + error.message, 'error');
+            }
+        }
+
+        // --- Generation Config Logic ---
+        let currentConfigFile = 'campus_names.yaml';
+
+        function switchEditorTab(filename) {
+            currentConfigFile = filename;
+            
+            // Update tabs UI
+            document.querySelectorAll('.editor-tab').forEach(tab => {
+                if (tab.textContent.toLowerCase().includes(filename.split('_')[0])) {
+                    tab.classList.add('active');
+                } else {
+                    tab.classList.remove('active');
+                }
+            });
+            
+            // Load content
+            loadGenerationConfig();
+        }
+
+        async function loadGenerationConfig() {
+            try {
+                const response = await apiRequest(`/api/admin/generation-config/${currentConfigFile}`);
                 if (response && response.ok) {
-                    showToast('Controller saved successfully', 'success');
-                    closeEditControllerModal();
-                    loadControllers();
+                    const data = await response.json();
+                    document.getElementById('yaml-editor').value = data.content;
+                } else {
+                    showToast('Failed to load configuration', 'error');
+                }
+            } catch (error) {
+                showToast('Error loading config: ' + error.message, 'error');
+            }
+        }
+
+        async function saveGenerationConfig() {
+            const content = document.getElementById('yaml-editor').value;
+            
+            try {
+                const response = await apiRequest(`/api/admin/generation-config/${currentConfigFile}`, {
+                    method: 'POST',
+                    body: JSON.stringify({ content: content })
+                });
+                
+                if (response && response.ok) {
+                    showToast('Configuration saved successfully', 'success');
                 } else {
                     const err = await response.json();
                     showToast('Failed to save: ' + (err.error || 'Unknown error'), 'error');
                 }
             } catch (error) {
-                showToast('Error: ' + error.message, 'error');
+                showToast('Error saving config: ' + error.message, 'error');
             }
         }
 
-        async function deleteController(name) {
-            if (!confirm(`Are you sure you want to delete controller ${name}?`)) return;
-
-            try {
-                const response = await apiRequest(`/api/admin/controllers/${name}`, {
-                    method: 'DELETE'
-                });
-
-                if (response && response.ok) {
-                    showToast('Controller deleted', 'success');
-                    loadControllers();
-                } else {
-                    showToast('Failed to delete controller', 'error');
-                }
-            } catch (error) {
-                showToast('Error: ' + error.message, 'error');
+        // Initialize editor if on config tab
+        document.addEventListener('DOMContentLoaded', () => {
+            if (document.getElementById('tab-config').classList.contains('active')) {
+                loadGenerationConfig();
             }
-        }
+        });
     </script>
 
     <!-- Edit Profile Modal -->
@@ -2925,5 +3310,163 @@
             </div>
         </div>
     </div>
+<script>
+// --- Templates Manager ---
+let allTemplates = {};
+let currentTemplateKey = null;
+
+async function loadTemplatesForManager() {
+    try {
+        const response = await apiRequest('/api/admin/templates');
+        allTemplates = await response.json(); // keys are the template names
+        renderTemplateList();
+        
+        // Don't auto-select to avoid unnecessary loading, or select first if none selected
+        if (!currentTemplateKey) {
+            const keys = Object.keys(allTemplates);
+            if (keys.length > 0) {
+               // selectTemplate(keys[0]); // Optional: auto select
+            }
+        }
+    } catch (error) {
+        showToast('Error loading templates: ' + error.message, 'error');
+    }
+}
+
+function renderTemplateList() {
+    const list = document.getElementById('template-list');
+    list.innerHTML = '';
+    
+    Object.keys(allTemplates).sort().forEach(key => {
+        const div = document.createElement('div');
+        div.className = 'template-item';
+        div.style.padding = '8px 12px';
+        div.style.cursor = 'pointer';
+        div.style.borderBottom = '1px solid var(--border)';
+        if (key === currentTemplateKey) {
+            div.style.background = 'var(--primary-dim)';
+        }
+        div.textContent = key;
+        div.onclick = () => selectTemplate(key);
+        list.appendChild(div);
+    });
+}
+
+async function selectTemplate(key) {
+    currentTemplateKey = key;
+    document.getElementById('template-key').value = key;
+    renderTemplateList();
+    
+    document.getElementById('template-editor').value = "Loading YAML...";
+    document.getElementById('template-editor').disabled = true;
+
+    try {
+        const response = await apiRequest(`/api/admin/templates/${encodeURIComponent(key)}/yaml`);
+        if (response.ok) {
+            const data = await response.json();
+            document.getElementById('template-editor').value = data.yaml;
+        } else {
+            document.getElementById('template-editor').value = "# Error loading YAML (New template?)";
+            // Check if it is a new unsaved one in our local list?
+        }
+    } catch (e) {
+        document.getElementById('template-editor').value = "# Error: " + e.message;
+    } finally {
+        document.getElementById('template-editor').disabled = false;
+    }
+}
+
+function createNewTemplate() {
+    const name = prompt("Enter new template name (e.g. My_Device_Type):");
+    if (!name) return;
+    if (allTemplates[name]) {
+        alert("Template already exists!");
+        return;
+    }
+    
+    // Add to local list so it appears in sidebar
+    allTemplates[name] = {}; 
+    
+    const defaultYaml = `# New Template: ${name}
+points:
+  room_temp:
+    kind: Number
+    unit: degF
+    tags: [sensor]
+tags:
+  equip: true
+  ${name.toLowerCase()}: true
+`;
+
+    currentTemplateKey = name;
+    document.getElementById('template-key').value = name;
+    document.getElementById('template-editor').value = defaultYaml;
+    renderTemplateList();
+    document.getElementById('template-editor').focus();
+}
+
+// Renaming disabled in YAML mode for simplicity (requires delete + create)
+// document.getElementById('template-key').addEventListener('change', updateCurrentTemplateName);
+
+async function deleteTemplate() {
+    if (!currentTemplateKey) return;
+    if (!confirm(`Delete template ${currentTemplateKey}?`)) return;
+    
+    try {
+        const response = await apiRequest(`/api/admin/templates/${encodeURIComponent(currentTemplateKey)}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.ok) {
+            delete allTemplates[currentTemplateKey];
+            currentTemplateKey = null;
+            document.getElementById('template-key').value = '';
+            document.getElementById('template-editor').value = '';
+            renderTemplateList();
+            showToast("Template deleted successfully", "success");
+        } else {
+            const err = await response.json();
+            showToast("Delete failed: " + (err.error || 'Unknown'), "error");
+        }
+    } catch (e) {
+        showToast("Error: " + e.message, "error");
+    }
+}
+
+async function saveCurrentTemplate() {
+    if (!currentTemplateKey) return;
+    
+    const yamlContent = document.getElementById('template-editor').value;
+    
+    try {
+        const response = await apiRequest(`/api/admin/templates/${encodeURIComponent(currentTemplateKey)}/yaml`, {
+            method: 'POST',
+            body: JSON.stringify({ yaml: yamlContent })
+        });
+        
+        if (response.ok) {
+            showToast('Template saved successfully');
+            loadTemplatesForManager(); // Refresh list
+        } else {
+            const err = await response.json();
+            showToast('Error: ' + (err.error || 'Save failed'), 'error');
+        }
+    } catch (error) {
+        showToast('Error saving template: ' + error.message, 'error');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    // If active page is templates, or we are on profiles page, we might want to check for 'view' param
+    const urlParams = new URLSearchParams(window.location.search);
+    const view = urlParams.get('view');
+    if (view && document.getElementById('tab-profiles').classList.contains('active')) {
+        showLibrarySubTab(view);
+    } else if (document.getElementById('tab-profiles').classList.contains('active')) {
+         // Default to equipment if no view param
+         showLibrarySubTab('equipment');
+    }
+});
+</script>
 </body>
 </html>

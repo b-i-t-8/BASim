@@ -1357,3 +1357,176 @@ tr.unocc td:first-child::after {
     border-color: var(--primary);
     font-weight: bold;
 }
+
+/* --- New Dashboard UI --- */
+
+/* View Navigation */
+.view-nav {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    background: var(--card-bg);
+    padding: 10px;
+    border: 1px solid var(--border);
+}
+
+.view-nav button {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 8px 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+
+.view-nav button:hover {
+    border-color: var(--primary-dim);
+    color: var(--text);
+}
+
+.view-nav button.active {
+    background: var(--primary-dark);
+    border-color: var(--primary);
+    color: #fff;
+}
+
+/* KPI Grid */
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.kpi-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    padding: 20px;
+    text-align: center;
+}
+
+.kpi-card h3 {
+    font-size: 0.9em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+}
+
+.kpi-value {
+    font-size: 2.5em;
+    font-weight: bold;
+    color: var(--text);
+    margin-bottom: 5px;
+}
+
+.kpi-sub {
+    font-size: 0.9em;
+    color: var(--text-dim);
+}
+
+.kpi-list {
+    list-style: none;
+    text-align: left;
+    margin-top: 10px;
+    font-size: 0.85em;
+    max-height: 100px;
+    overflow-y: auto;
+}
+
+.kpi-list li {
+    padding: 4px 0;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+}
+
+.hot-spots .kpi-value { color: var(--danger); }
+.cold-spots .kpi-value { color: var(--primary-dim); }
+.comfort .kpi-value { color: var(--success); }
+
+/* Smart Device Cards */
+.device-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.device-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    padding: 15px;
+    position: relative;
+    transition: transform 0.2s;
+}
+
+.device-card:hover {
+    border-color: var(--primary-dim);
+    transform: translateY(-2px);
+}
+
+.device-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+}
+
+.device-name {
+    font-weight: bold;
+    color: var(--primary);
+}
+
+.device-status {
+    font-size: 0.8em;
+    padding: 2px 6px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+}
+
+.device-main-metrics {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+}
+
+.metric-large {
+    text-align: center;
+    flex: 1;
+}
+
+.metric-value {
+    font-size: 1.8em;
+    font-weight: bold;
+}
+
+.metric-label {
+    font-size: 0.8em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+.device-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    font-size: 0.9em;
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    color: var(--text-dim);
+}
+
+/* Status Colors */
+.temp-hot { color: var(--danger); }
+.temp-cold { color: var(--primary-dim); }
+.temp-ok { color: var(--success); }
+

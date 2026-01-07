@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wastewater - BASim</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script>
+        // Apply saved theme immediately to prevent flash
+        (function() {
+            const theme = localStorage.getItem('basim-theme') || 'ocean';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+    <style>
+        .page-wrap {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 15px;
+        }
+        .view-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border);
+        }
+        .view-header h2 {
+            margin: 0;
+            color: var(--primary);
+            font-weight: normal;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .view-stats {
+            display: flex;
+            gap: 20px;
+        }
+        .stat {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+        .stat-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--text);
+        }
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+        .section {
+            margin-bottom: 30px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 20px;
+            border-radius: 4px;
+        }
+        .section h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 1rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 8px;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .data-table th {
+            text-align: left;
+            padding: 8px;
+            color: var(--text-muted);
+            font-weight: normal;
+            font-size: 0.9rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .data-table td {
+            padding: 10px 8px;
+            border-bottom: 1px solid var(--border);
+        }
+        .data-table tr:last-child td {
+            border-bottom: none;
+        }
+        .bar-cell {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .mini-bar {
+            flex: 1;
+            height: 6px;
+            background: var(--bg);
+            border-radius: 3px;
+            overflow: hidden;
+            max-width: 100px;
+        }
+        .mini-fill {
+            height: 100%;
+            background: var(--primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-top">
+                <h1>BASim <span id="header-title" style="font-size: 0.5em; font-weight: normal; opacity: 0.7; margin-left: 15px;">- [Main Campus]</span></h1>
+                <div class="user-info">
+                    <a href="{{ url_for('index') }}" class="admin-link {% if request.endpoint == 'index' %}active{% endif %}" style="margin-right: 15px; text-decoration: none; color: var(--text-muted);">[DASH] Dashboard</a>
+                    <a href="{{ url_for('readme_page') }}" class="admin-link {% if request.endpoint == 'readme_page' %}active{% endif %}" style="margin-right: 15px; text-decoration: none; color: var(--text-muted);">[DOC] Readme</a>
+                    <a href="{{ url_for('topology_page') }}" class="admin-link {% if request.endpoint == 'topology_page' %}active{% endif %}" style="margin-right: 15px; text-decoration: none; color: var(--text-muted);">[NET] Topology</a>
+                    <a href="{{ url_for('protocols_page') }}" class="admin-link {% if request.endpoint == 'protocols_page' %}active{% endif %}" style="margin-right: 15px; text-decoration: none; color: var(--text-muted);">[INT] Protocols</a>
+                    {% if user.role == 'admin' %}
+                    <a href="{{ url_for('admin_config') }}" class="admin-link {% if 'admin' in request.endpoint %}active{% endif %}" style="margin-right: 15px; text-decoration: none; color: var(--text-muted);">[CFG] Admin</a>
+                    {% endif %}
+                    <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+                </div>
+            </div>
+        </header>
+
+        <div class="page-wrap" id="content">
+            <p>Loading wastewater data...</p>
+        </div>
+    </div>
+
+    <script>
+        async function loadData() {
+            try {
+                const response = await fetch('/api/wastewater');
+                if (!response.ok) throw new Error('Failed to load data');
+                const ww = await response.json();
+                render(ww);
+            } catch (e) {
+                document.getElementById('content').innerHTML = `<p style="color: var(--danger)">Error: ${e.message}</p>`;
+            }
+        }
+
+        function render(ww) {
+            if (!ww.enabled) {
+                document.getElementById('content').innerHTML = '<h2>Wastewater facility is not enabled in this simulation.</h2>';
+                return;
+            }
+
+            const html = `
+                <div class="view-header">
+                    <h2>${ww.display_name}</h2>
+                    <div class="view-stats">
+                        <div class="stat"><span class="stat-value">${ww.influent_flow_mgd?.toFixed(2) || '0'}</span><span class="stat-label">Influent MGD</span></div>
+                        <div class="stat"><span class="stat-value">${ww.effluent_flow_mgd?.toFixed(2) || '0'}</span><span class="stat-label">Effluent MGD</span></div>
+                        <div class="stat"><span class="stat-value">${ww.dissolved_oxygen_mg_l?.toFixed(1) || '--'}</span><span class="stat-label">DO mg/L</span></div>
+                        <div class="stat"><span class="stat-value">${ww.ph?.toFixed(1) || '--'}</span><span class="stat-label">pH</span></div>
+                        <div class="stat"><span class="stat-value">${ww.total_kw?.toFixed(0) || '0'}</span><span class="stat-label">Total kW</span></div>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <h3>LIFT STATIONS</h3>
+                    <table class="data-table">
+                        <thead><tr><th>Name</th><th>Wet Well</th><th>Flow</th><th>Pumps Running</th><th>kW</th></tr></thead>
+                        <tbody>
+                            ${ww.lift_stations.map(ls => `
+                                <tr>
+                                    <td><strong>${ls.name}</strong></td>
+                                    <td>${ls.wet_well_level_ft?.toFixed(2) || '--'} ft</td>
+                                    <td>${ls.flow_gpm?.toFixed(0) || '0'} GPM</td>
+                                    <td>${ls.pumps_running}</td>
+                                    <td>${ls.kw?.toFixed(1) || '0'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="section">
+                    <h3>AERATION BLOWERS</h3>
+                    <table class="data-table">
+                        <thead><tr><th>Name</th><th>Status</th><th>Speed</th><th>Output</th><th>Discharge Temp</th><th>kW</th></tr></thead>
+                        <tbody>
+                            ${ww.blowers.map(b => `
+                                <tr>
+                                    <td><strong>${b.name}</strong></td>
+                                    <td>${b.status ? '<span style="color:var(--primary)">On</span>' : '<span style="color:var(--text-muted)">Off</span>'}</td>
+                                    <td><div class="bar-cell"><span>${b.speed_pct?.toFixed(1) || '0'}%</span><div class="mini-bar"><div class="mini-fill" style="width:${b.speed_pct || 0}%"></div></div></div></td>
+                                    <td>${b.output_scfm?.toFixed(0) || '0'} SCFM</td>
+                                    <td>${b.discharge_temp?.toFixed(1) || '--'}°F</td>
+                                    <td>${b.kw?.toFixed(1) || '0'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="section">
+                    <h3>CLARIFIERS</h3>
+                    <table class="data-table">
+                        <thead><tr><th>Name</th><th>Type</th><th>Flow</th><th>Sludge Blanket</th><th>Torque</th><th>TSS</th></tr></thead>
+                        <tbody>
+                            ${ww.clarifiers.map(c => `
+                                <tr>
+                                    <td><strong>${c.name}</strong></td>
+                                    <td><span class="tag">${c.clarifier_type}</span></td>
+                                    <td>${c.flow_mgd?.toFixed(2) || '0'} MGD</td>
+                                    <td>${c.sludge_blanket_ft?.toFixed(2) || '--'} ft</td>
+                                    <td>${c.torque_pct?.toFixed(1) || '0'}%</td>
+                                    <td>${c.effluent_tss_mg_l?.toFixed(1) || '--'} mg/L</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="section">
+                    <h3>UV DISINFECTION</h3>
+                    <table class="data-table">
+                        <thead><tr><th>Name</th><th>Status</th><th>Intensity</th><th>Lamp Life</th><th>kW</th><th>E.coli MPN</th></tr></thead>
+                        <tbody>
+                            ${ww.uv_systems.map(uv => `
+                                <tr>
+                                    <td><strong>${uv.name}</strong></td>
+                                    <td>${uv.status ? '<span style="color:var(--primary)">On</span>' : '<span style="color:var(--text-muted)">Off</span>'}</td>
+                                    <td>${uv.uv_intensity_pct?.toFixed(1) || '0'}%</td>
+                                    <td><div class="bar-cell"><span>${uv.lamp_life_remaining_pct?.toFixed(0) || '0'}%</span><div class="mini-bar"><div class="mini-fill" style="width:${uv.lamp_life_remaining_pct || 0}%"></div></div></div></td>
+                                    <td>${uv.kw?.toFixed(1) || '0'}</td>
+                                    <td>${uv.effluent_ecoli_mpn?.toFixed(0) || '0'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            document.getElementById('content').innerHTML = html;
+        }
+
+        loadData();
+        setInterval(loadData, 2000);
+    </script>
+</body>
+</html>

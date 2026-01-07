@@ -1,14 +1,21 @@
 manufacturer: Siemens
+display_name: Siemens
 models:
   DXR2.E09:
     description: Desigo Room Automation Station
     inputs: 8
     outputs: 4
+    input_types: [Universal Input]
+    output_types: [Triac, 0-10V]
   PXC4:
     description: Desigo PXC4 Automation Station
     inputs: 16
     outputs: 12
+    input_types: [Universal Input]
+    output_types: [Universal Output]
   PXC5:
     description: Desigo PXC5 System Controller
     inputs: 0
     outputs: 0
+    input_types: []
+    output_types: []

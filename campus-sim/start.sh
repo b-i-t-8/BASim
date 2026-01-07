@@ -5,4 +5,13 @@ set -e
 caddy run --config /etc/caddy/Caddyfile &
 
 # Start the Python application
-exec python main.py
+if [ "$RUNNING_IN_DOCKER" = "true" ]; then
+    echo "Running in Docker (using system python)..."
+    exec python main.py
+elif [ -d "venv" ]; then
+    echo "Using virtual environment..."
+    exec ./venv/bin/python main.py
+else
+    echo "Using system python..."
+    exec python main.py
+fi

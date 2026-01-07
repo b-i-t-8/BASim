@@ -73,8 +73,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     initTheme();
     await loadUserInfo();
     loadStatus();
-    loadBuildings();
+    await loadBuildings();
     loadOverrides();
+    
+    // Handle initial URL hash
+    handleHashChange();
+
+    // Listen for hash changes
+    window.addEventListener('hashchange', handleHashChange);
     
     // Auto-refresh every 2 seconds
     refreshInterval = setInterval(() => {
@@ -84,12 +90,109 @@ document.addEventListener('DOMContentLoaded', async () => {
     }, 2000);
 });
 
+function handleHashChange() {
+    const hash = window.location.hash.slice(1); // Remove #
+    if (!hash) {
+        // Default to dashboard
+        const dashBtn = document.querySelector('.dashboard-tab');
+        if (dashBtn) {
+            selectDashboard(dashBtn);
+        }
+        return;
+    }
+
+    const parts = hash.split('/');
+    const type = parts[0];
+    const id = parts[1];
+
+    if (type === 'dashboard') {
+        const btn = document.querySelector('.dashboard-tab');
+        if (btn) selectDashboard(btn);
+    } else if (type === 'building' && id) {
+        const btn = document.querySelector(`.view-nav button[data-id="${id}"]`);
+        if (btn) {
+            selectBuilding(id, btn, false);
+        }
+    } else {
+        // Facility
+        const btn = document.querySelector(`.view-nav .${type}-tab`);
+        if (btn) {
+            selectFacility(type, btn, false);
+        }
+    }
+}
+
 function refreshCurrentView() {
-    if (currentView === 'plant') loadPlantData();
+    if (currentView === 'dashboard') loadDashboardData();
+    else if (currentView === 'plant') loadPlantData();
     else if (currentView === 'electrical') loadElectricalData();
     else if (currentView === 'datacenter') loadDataCenterData();
     else if (currentView === 'wastewater') loadWastewaterData();
     else if (currentBuilding) loadBuildingData(currentBuilding);
+}
+
+// ============== DASHBOARD VIEW ==============
+
+async function loadDashboardData() {
+    try {
+        // We need data from all buildings to compute aggregates
+        // This is inefficient (N+1 queries) but fine for a prototype/simulator
+        const buildingsResp = await apiRequest(`${API_BASE}/api/buildings`);
+        if (!buildingsResp) return;
+        const buildingsList = await buildingsResp.json();
+        
+        const plantResp = await apiRequest(`${API_BASE}/api/plant`);
+        const plant = plantResp ? await plantResp.json() : {};
+
+        let totalTemp = 0;
+        let tempCount = 0;
+        let hotSpots = [];
+        let coldSpots = [];
+        
+        // Fetch details for each building
+        // Parallel fetch for speed
+        const promises = buildingsList.map(b => apiRequest(`${API_BASE}/api/buildings/${b.id}`).then(r => r.json()));
+        const buildings = await Promise.all(promises);
+        
+        buildings.forEach(b => {
+            b.ahus.forEach(ahu => {
+                if (ahu.vavs) {
+                    ahu.vavs.forEach(vav => {
+                        const temp = vav.room_temp;
+                        if (typeof temp === 'number') {
+                            totalTemp += temp;
+                            tempCount++;
+                            
+                            if (temp > 76.0) hotSpots.push({ name: `${b.name}/${vav.name}`, val: temp });
+                            if (temp < 68.0) coldSpots.push({ name: `${b.name}/${vav.name}`, val: temp });
+                        }
+                    });
+                }
+            });
+        });
+        
+        // Update KPI Cards
+        const avgTemp = tempCount > 0 ? (totalTemp / tempCount).toFixed(1) : '--';
+        const comfortScore = tempCount > 0 ? Math.round(((tempCount - hotSpots.length - coldSpots.length) / tempCount) * 100) : 100;
+        
+        document.getElementById('kpi-hot-count').textContent = hotSpots.length;
+        document.getElementById('kpi-cold-count').textContent = coldSpots.length;
+        document.getElementById('kpi-avg-temp').textContent = avgTemp;
+        document.getElementById('kpi-comfort-score').textContent = `${comfortScore}%`;
+        document.getElementById('kpi-plant-load').textContent = plant.total_cooling_tons?.toFixed(0) || '--';
+        
+        // Render Lists
+        renderKpiList('kpi-hot-list', hotSpots.sort((a,b) => b.val - a.val).slice(0, 10)); // Top 10 hot
+        renderKpiList('kpi-cold-list', coldSpots.sort((a,b) => a.val - b.val).slice(0, 10)); // Top 10 cold
+        
+    } catch (error) { console.error('Failed to load dashboard data:', error); }
+}
+
+function renderKpiList(elementId, items) {
+    const list = document.getElementById(elementId);
+    if (!list) return;
+    list.innerHTML = items.length === 0 ? '<li>None</li>' : 
+        items.map(item => `<li><span>${item.name}</span><strong>${item.val.toFixed(1)}°</strong></li>`).join('');
 }
 
 // API request with auth handling
@@ -232,9 +335,17 @@ async function loadBuildings() {
         const statusResp = await apiRequest(`${API_BASE}/api/status`);
         const status = statusResp ? await statusResp.json() : {};
         
-        const nav = document.getElementById('building-nav');
+        const nav = document.getElementById('view-nav');
+        if (!nav) return; // Guard for old HTML
         nav.innerHTML = '';
         
+        // Dashboard Tab
+        const dashBtn = document.createElement('button');
+        dashBtn.className = 'dashboard-tab';
+        dashBtn.innerHTML = `<span class="tab-icon">[DASH]</span><span class="tab-name">Overview</span>`;
+        dashBtn.onclick = () => { window.location.hash = '#dashboard'; };
+        nav.appendChild(dashBtn);
+
         // Facility tabs
         const tabs = [
             { id: 'plant', icon: '[PLT]', name: 'Central Plant', info: 'Chillers & Boilers' },
@@ -252,31 +363,43 @@ async function loadBuildings() {
             const btn = document.createElement('button');
             btn.className = `${tab.id}-tab`;
             btn.innerHTML = `<span class="tab-icon">${tab.icon}</span><span class="tab-name">${tab.name}</span>`;
-            btn.onclick = () => selectFacility(tab.id, btn);
+            btn.onclick = () => { window.location.hash = `#${tab.id}`; };
             nav.appendChild(btn);
         });
         
         // Building tabs
         buildings.forEach(b => {
             const btn = document.createElement('button');
+            btn.dataset.id = b.id;
             btn.innerHTML = `<span class="tab-icon">[BLD]</span><span class="tab-name">${b.display_name || b.name}</span>`;
-            btn.onclick = () => selectBuilding(b.id, btn);
+            btn.onclick = () => { window.location.hash = `#building/${b.id}`; };
             nav.appendChild(btn);
         });
-        
-        // Select first building by default
-        if (buildings.length > 0) {
-            const firstBtn = nav.querySelector('button:last-child');
-            selectBuilding(buildings[0].id, firstBtn);
-        }
     } catch (error) { console.error('Failed to load buildings:', error); }
 }
 
-function selectFacility(facility, btn) {
-    document.querySelectorAll('.building-nav button').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
+function selectDashboard(btn) {
+    updateNavSelection(btn);
+    currentView = 'dashboard';
+    currentBuilding = null;
+    
+    document.getElementById('dashboard-view').style.display = 'block';
+    document.getElementById('content-view').style.display = 'none';
+    
+    loadDashboardData();
+}
+
+function selectFacility(facility, btn, updateUrl = true) {
+    updateNavSelection(btn);
     currentView = facility;
     currentBuilding = null;
+    
+    document.getElementById('dashboard-view').style.display = 'none';
+    document.getElementById('content-view').style.display = 'block';
+    
+    if (updateUrl) {
+        window.location.hash = `#${facility}`;
+    }
     
     if (facility === 'plant') loadPlantData();
     else if (facility === 'electrical') loadElectricalData();
@@ -284,12 +407,24 @@ function selectFacility(facility, btn) {
     else if (facility === 'wastewater') loadWastewaterData();
 }
 
-function selectBuilding(buildingId, btn) {
-    document.querySelectorAll('.building-nav button').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
+function selectBuilding(buildingId, btn, updateUrl = true) {
+    updateNavSelection(btn);
     currentView = 'building';
     currentBuilding = buildingId;
+    
+    document.getElementById('dashboard-view').style.display = 'none';
+    document.getElementById('content-view').style.display = 'block';
+    
+    if (updateUrl) {
+        window.location.hash = `#building/${buildingId}`;
+    }
+
     loadBuildingData(buildingId);
+}
+
+function updateNavSelection(activeBtn) {
+    document.querySelectorAll('.view-nav button').forEach(b => b.classList.remove('active'));
+    if (activeBtn) activeBtn.classList.add('active');
 }
 
 // ============== BUILDING VIEW ==============
@@ -299,7 +434,7 @@ async function loadBuildingData(buildingId) {
         const response = await apiRequest(`${API_BASE}/api/buildings/${buildingId}`);
         if (!response) return;
         const building = await response.json();
-        document.getElementById('building-content').innerHTML = renderBuilding(building);
+        document.getElementById('content-view').innerHTML = renderBuilding(building);
     } catch (error) { console.error('Failed to load building data:', error); }
 }
 
@@ -349,22 +484,9 @@ function renderBuilding(building) {
             html += `
                 <div class="subsection">
                     <h4>VAV Boxes (${ahu.vavs.length})</h4>
-                    <table class="data-table compact">
-                        <thead>
-                            <tr>
-                                <th>Zone</th>
-                                <th>Room</th>
-                                <th>Clg SP</th>
-                                <th>Htg SP</th>
-                                <th>Damper</th>
-                                <th>Reheat</th>
-                                <th>${currentFlowAirUnit}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${ahu.vavs.map(vav => renderVAVRow(building.id, ahu.id, vav, isAdmin)).join('')}
-                        </tbody>
-                    </table>
+                    <div class="device-grid">
+                        ${ahu.vavs.map(vav => renderDeviceCard(building.id, ahu.id, vav, isAdmin)).join('')}
+                    </div>
                 </div>
             `;
         }
@@ -375,33 +497,64 @@ function renderBuilding(building) {
     return html;
 }
 
-function renderVAVRow(buildingId, ahuId, vav, isAdmin) {
+function renderDeviceCard(buildingId, ahuId, vav, isAdmin) {
     const path = vav.point_path;
-    const tempClass = getTempClass(vav.room_temp);
+    const temp = vav.room_temp;
+    const setpoint = vav.effective_setpoint || vav.cooling_setpoint;
     const damperPct = vav.damper_position?.toFixed(0) || 0;
     const reheatPct = vav.reheat_valve?.toFixed(0) || 0;
-    const occClass = vav.occupancy ? '' : 'unocc';
+    const airflow = vav.cfm_actual?.toFixed(0) || '--';
     
+    // Determine status color
+    let tempClass = 'temp-ok';
+    if (temp > (vav.cooling_setpoint + 2)) tempClass = 'temp-hot';
+    else if (temp < (vav.heating_setpoint - 2)) tempClass = 'temp-cold';
+
     return `
-        <tr class="${occClass}">
-            <td><strong>${vav.zone_name || vav.name}</strong></td>
-            <td class="${tempClass}">${clickablePoint(path + '.room_temp', vav.room_temp, currentTempUnit, 'Room Temp', isAdmin, false)}</td>
-            <td>${clickablePoint(path + '.cooling_setpoint', vav.cooling_setpoint, currentTempUnit, 'Cooling SP', isAdmin, true)}</td>
-            <td>${clickablePoint(path + '.heating_setpoint', vav.heating_setpoint, currentTempUnit, 'Heating SP', isAdmin, true)}</td>
-            <td>
-                <div class="bar-cell">
-                    ${clickablePoint(path + '.damper_position', damperPct, '%', 'Damper', isAdmin, true)}
-                    <div class="mini-bar"><div class="mini-fill" style="width:${damperPct}%;background:${getDamperColor(damperPct)}"></div></div>
+        <div class="device-card">
+            <div class="device-header">
+                <span class="device-name">${vav.zone_name || vav.name}</span>
+                <span class="device-status">${vav.occupancy ? 'OCC' : 'UNOCC'}</span>
+            </div>
+            
+            <div class="device-main-metrics">
+                <div class="metric-large">
+                    <div class="metric-value ${tempClass}">
+                        ${clickablePoint(path + '.room_temp', temp, '', 'Room Temp', isAdmin, false)}<span style="font-size:0.5em">°</span>
+                    </div>
+                    <div class="metric-label">Room Temp</div>
                 </div>
-            </td>
-            <td>
-                <div class="bar-cell">
-                    ${clickablePoint(path + '.reheat_valve', reheatPct, '%', 'Reheat', isAdmin, true)}
-                    <div class="mini-bar"><div class="mini-fill reheat" style="width:${reheatPct}%"></div></div>
+                <div class="metric-large">
+                    <div class="metric-value" style="color:var(--text-dim)">
+                        ${setpoint?.toFixed(1) || '--'}<span style="font-size:0.5em">°</span>
+                    </div>
+                    <div class="metric-label">Setpoint</div>
                 </div>
-            </td>
-            <td>${vav.cfm_actual?.toFixed(0) || '--'}</td>
-        </tr>
+            </div>
+            
+            <div class="device-details">
+                <div class="detail-row">
+                    <span>Flow:</span>
+                    <span>${airflow} ${currentFlowAirUnit}</span>
+                </div>
+                <div class="detail-row">
+                    <span>Damper:</span>
+                    <span>${clickablePoint(path + '.damper_position', damperPct, '%', 'Damper', isAdmin, true)}</span>
+                </div>
+                <div class="detail-row">
+                    <span>Reheat:</span>
+                    <span>${clickablePoint(path + '.reheat_valve', reheatPct, '%', 'Reheat', isAdmin, true)}</span>
+                </div>
+                <div class="detail-row">
+                    <span>Mode:</span>
+                    <span>${vav.occupancy_mode || 'Auto'}</span>
+                </div>
+            </div>
+            
+            <div class="mini-bar" style="margin-top:8px">
+                <div class="mini-fill" style="width:${damperPct}%; background:var(--primary-dim)"></div>
+            </div>
+        </div>
     `;
 }
 
@@ -412,7 +565,7 @@ async function loadPlantData() {
         const response = await apiRequest(`${API_BASE}/api/plant`);
         if (!response) return;
         const plant = await response.json();
-        document.getElementById('building-content').innerHTML = renderPlant(plant);
+        document.getElementById('content-view').innerHTML = renderPlant(plant);
     } catch (error) { console.error('Failed to load plant data:', error); }
 }
 
@@ -548,7 +701,7 @@ async function loadElectricalData() {
         const response = await apiRequest(`${API_BASE}/api/electrical`);
         if (!response) return;
         const elec = await response.json();
-        document.getElementById('building-content').innerHTML = renderElectrical(elec);
+        document.getElementById('content-view').innerHTML = renderElectrical(elec);
     } catch (error) { console.error('Failed to load electrical data:', error); }
 }
 
@@ -688,7 +841,7 @@ async function loadDataCenterData() {
         const response = await apiRequest(`${API_BASE}/api/datacenter`);
         if (!response) return;
         const dc = await response.json();
-        document.getElementById('building-content').innerHTML = renderDataCenter(dc);
+        document.getElementById('content-view').innerHTML = renderDataCenter(dc);
     } catch (error) { console.error('Failed to load data center data:', error); }
 }
 
@@ -762,7 +915,7 @@ async function loadWastewaterData() {
         const response = await apiRequest(`${API_BASE}/api/wastewater`);
         if (!response) return;
         const ww = await response.json();
-        document.getElementById('building-content').innerHTML = renderWastewater(ww);
+        document.getElementById('content-view').innerHTML = renderWastewater(ww);
     } catch (error) { console.error('Failed to load wastewater data:', error); }
 }
 

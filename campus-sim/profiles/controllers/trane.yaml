@@ -1,14 +1,21 @@
 manufacturer: Trane
+display_name: Trane Technologies
 models:
   UC210:
     description: Tracer UC210 VAV Controller
     inputs: 5
     outputs: 4
+    input_types: [Universal Input, Airflow]
+    output_types: [Binary Output, Analog Output]
   UC600:
     description: Tracer UC600 Programmable Controller
     inputs: 20
     outputs: 16
+    input_types: [Universal Input]
+    output_types: [Universal Output]
   TracerSC:
     description: Tracer SC System Controller
     inputs: 1
     outputs: 0
+    input_types: [Binary Input]
+    output_types: []

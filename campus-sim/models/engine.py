@@ -296,7 +296,7 @@ class CampusEngine(PhysicsEngine):
                 # Update config
                 self._config = CampusSizeConfig(
                     name="Custom",
-                    num_buildings=max(1, min(5, new_buildings)),
+                    num_buildings=max(1, min(20, new_buildings)),
                     num_ahus_per_building=max(1, min(20, new_ahus)),
                     num_vavs_per_ahu=max(1, min(50, new_vavs))
                 )

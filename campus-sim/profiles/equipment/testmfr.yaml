@@ -1,0 +1,63 @@
+name: TestMfr
+manufacturer: TestMfr
+display_name: Test Widgets
+description: Test Manufacturer Profile
+naming_convention: PascalCase
+protocols:
+- BACnet
+- Modbus
+device_definitions:
+  VAV-Test:
+    template: VAV_CoolingOnly
+    description: My Template VAV
+    points:
+      ZoneTemp:
+        mapping: room_temp
+        address: AI:1
+        haystack_tags:
+        - zone
+        - air
+        - temp
+        - sensor
+        units: "\xB0F"
+        description: Zone Temperature
+      cooling_setpoint:
+        description: Cooling Setpoint
+        units: "\xB0F"
+        type: AV
+        haystack_tags:
+        - zone
+        - air
+        - temp
+        - sp
+        - cooling
+        mapping: cooling_setpoint
+        writable: true
+        value: 74.0
+      cfm_actual:
+        description: Discharge Airflow
+        units: cfm
+        type: AI
+        haystack_tags:
+        - discharge
+        - air
+        - flow
+        - sensor
+        mapping: cfm_actual
+        writable: false
+      damper_position:
+        description: Damper Position
+        units: '%'
+        type: AO
+        haystack_tags:
+        - discharge
+        - air
+        - damper
+        - cmd
+        mapping: damper_position
+        writable: false
+  AHU-2000:
+    description: New Standard AHU
+    defaults: {}
+    points: {}
+    template: AHU_VAV

@@ -1,14 +1,21 @@
-manufacturer: KMC Controls
+manufacturer: KMC
+display_name: KMC Controls
 models:
   BAC-9000:
     description: KMC Conquest VAV Controller
     inputs: 8
     outputs: 4
+    input_types: [Universal Input, Airflow]
+    output_types: [Universal Output, Triac]
   BAC-5900:
     description: KMC Conquest General Purpose Controller
     inputs: 10
     outputs: 8
+    input_types: [Universal Input]
+    output_types: [Universal Output]
   KMC-Commander:
     description: KMC Commander IoT Gateway
     inputs: 0
     outputs: 0
+    input_types: []
+    output_types: []

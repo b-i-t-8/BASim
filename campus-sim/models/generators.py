@@ -1,5 +1,7 @@
 import random
 import logging
+import os
+import yaml
 from typing import List, Dict, Optional, Any, Tuple
 from dataclasses import dataclass, field
 
@@ -389,6 +391,22 @@ class CampusModelGenerator:
         self._seed = seed
         self._building_names = building_names or []
         self._campus_type = campus_type
+        
+    def _load_yaml_config(self, filename: str) -> Any:
+        """Load configuration from YAML file in profiles/generation directory."""
+        try:
+            base_path = os.path.dirname(os.path.dirname(__file__))
+            config_path = os.path.join(base_path, 'profiles', 'generation', filename)
+            
+            if os.path.exists(config_path):
+                with open(config_path, 'r') as f:
+                    return yaml.safe_load(f)
+            else:
+                logger.warning(f"Configuration file not found: {config_path}")
+                return None
+        except Exception as e:
+            logger.error(f"Error loading configuration {filename}: {e}")
+            return None
     
     def generate(self) -> List[Building]:
         """Generate buildings based on configuration with variance."""
@@ -402,34 +420,51 @@ class CampusModelGenerator:
             f"VAVs={self._config.num_vavs_per_ahu}"
         )
         
+        # Load configurations
+        names_config = self._load_yaml_config('campus_names.yaml')
+        rules_config = self._load_yaml_config('building_rules.yaml')
+        
         # Shuffle name lists for variety
         available_building_names = BUILDING_NAMES.copy()
         random.shuffle(available_building_names)
         available_zone_names = ZONE_NAMES.copy()
         
-        # Adjust names based on campus type
-        if self._campus_type == CampusType.HOSPITAL:
-            available_building_names = ["Main Hospital", "Emergency Wing", "Outpatient Center", "Research Lab", "Medical Office", "Parking Garage", "Central Utility Plant"]
-            available_zone_names = ["Patient Room", "Operating Room", "ICU", "Lab", "Office", "Waiting Area", "Corridor"]
-        elif self._campus_type == CampusType.CORPORATE:
-            available_building_names = ["Headquarters", "Sales Office", "R&D Center", "Cafeteria", "Conference Center", "Parking Garage"]
-            available_zone_names = ["Open Office", "Conference Room", "Executive Office", "Break Room", "Lobby", "Server Room"]
-        elif self._campus_type == CampusType.DATA_CENTER:
-            available_building_names = ["Data Hall A", "Data Hall B", "NOC", "Admin Building", "Power Plant"]
-            available_zone_names = ["Data Hall", "Meet-Me Room", "NOC", "Office", "Battery Room"]
-        elif self._campus_type == CampusType.MIXED_USE:
-            available_building_names = ["Office Tower", "Residential Block", "Retail Center", "Hotel", "Gym", "Parking Garage", "Cinema", "Medical Clinic"]
-            available_zone_names = ["Apartment", "Office", "Shop", "Room", "Lobby", "Corridor"]
+        # Adjust names based on campus type from YAML
+        if names_config:
+            # Map CampusType enum value to YAML key (handle spaces if needed)
+            # CampusType values are "University", "Hospital", "Data Center", etc.
+            # YAML keys match these values exactly in my file creation step.
+            type_key = self._campus_type.value
+            
+            if type_key in names_config:
+                available_building_names = names_config[type_key].get('building_names', available_building_names)
+                available_zone_names = names_config[type_key].get('zone_names', available_zone_names)
+            else:
+                logger.warning(f"Campus type {type_key} not found in names config, using defaults")
+        
+        # Fallback to hardcoded if YAML load failed (or for backward compatibility if I missed something)
+        # But since I just created the files, I'll rely on them primarily.
+        # The previous hardcoded blocks are removed in favor of the YAML logic above.
         
         buildings = []
         for b_idx in range(self._config.num_buildings):
-            # Use custom name if provided, otherwise pick from random pool
-            if b_idx < len(self._building_names) and self._building_names[b_idx]:
-                display_name = self._building_names[b_idx]
-            elif b_idx < len(available_building_names):
-                display_name = available_building_names[b_idx]
-            else:
-                display_name = f"Building {b_idx + 1}"
+            display_name = None
+            
+            # Specific overrides for Data Center layout
+            if self._campus_type == CampusType.DATA_CENTER:
+                if b_idx == 0:
+                    display_name = "NOC"
+                elif 5 <= b_idx <= 19:
+                    display_name = f"Data Hall {b_idx - 4}"
+
+            if not display_name:
+                # Use custom name if provided, otherwise pick from random pool
+                if b_idx < len(self._building_names) and self._building_names[b_idx]:
+                    display_name = self._building_names[b_idx]
+                elif b_idx < len(available_building_names):
+                    display_name = available_building_names[b_idx]
+                else:
+                    display_name = f"Building {b_idx + 1}"
             
             # Randomize building characteristics
             floor_count = random.randint(1, 5)
@@ -444,30 +479,59 @@ class CampusModelGenerator:
             schedule = (7, 18)
             
             name_lower = display_name.lower()
-            if "lab" in name_lower or "research" in name_lower:
-                b_type = BuildingType.LAB
-                eff_factor = 1.2 # Higher load
-                schedule = (6, 20)
-            elif "hospital" in name_lower or "medical" in name_lower or "clinic" in name_lower:
-                b_type = BuildingType.HOSPITAL
-                eff_factor = 1.5
-                schedule = (0, 24) # 24/7
-            elif "data" in name_lower or "server" in name_lower:
-                b_type = BuildingType.DATA_CENTER
-                eff_factor = 2.0
-                schedule = (0, 24)
-            elif "warehouse" in name_lower or "storage" in name_lower:
-                b_type = BuildingType.WAREHOUSE
-                eff_factor = 0.5
-                schedule = (6, 16)
-            elif "residential" in name_lower or "apartment" in name_lower or "hotel" in name_lower:
-                b_type = BuildingType.RESIDENTIAL
-                eff_factor = 0.8
-                schedule = (16, 23) 
-            elif "retail" in name_lower or "shop" in name_lower or "mall" in name_lower:
-                b_type = BuildingType.RETAIL
-                eff_factor = 1.1
-                schedule = (9, 21)
+            rule_matched = False
+            
+            # Apply rules from YAML configuration
+            if rules_config and 'rules' in rules_config:
+                for rule in rules_config['rules']:
+                    keywords = rule.get('keywords', [])
+                    # Check if any keyword matches the building name
+                    if any(k.lower() in name_lower for k in keywords):
+                        try:
+                            # Map string type to Enum
+                            type_str = rule.get('type', 'Office')
+                            # Try to find matching BuildingType
+                            for bt in BuildingType:
+                                if bt.value.lower() == type_str.lower():
+                                    b_type = bt
+                                    break
+                            
+                            eff_factor = float(rule.get('eff_factor', 1.0))
+                            sched_list = rule.get('schedule', [7, 18])
+                            if len(sched_list) >= 2:
+                                schedule = (sched_list[0], sched_list[1])
+                            
+                            rule_matched = True
+                            break
+                        except Exception as e:
+                            logger.error(f"Error applying rule for {display_name}: {e}")
+            
+            # Fallback logic if no rule matched (backward compatibility)
+            if not rule_matched:
+                if "lab" in name_lower or "research" in name_lower or "science" in name_lower:
+                    b_type = BuildingType.LAB
+                    eff_factor = 1.3
+                    schedule = (6, 20)
+                elif "hospital" in name_lower or "emergency" in name_lower:
+                    b_type = BuildingType.HOSPITAL
+                    eff_factor = 1.5
+                    schedule = (0, 24)
+                elif "data" in name_lower or "server" in name_lower:
+                    b_type = BuildingType.DATA_CENTER
+                    eff_factor = 2.5
+                    schedule = (0, 24)
+                elif "warehouse" in name_lower or "storage" in name_lower:
+                    b_type = BuildingType.WAREHOUSE
+                    eff_factor = 0.5
+                    schedule = (6, 16)
+                elif "residential" in name_lower or "apartment" in name_lower or "dorm" in name_lower:
+                    b_type = BuildingType.RESIDENTIAL
+                    eff_factor = 0.8
+                    schedule = (16, 23)
+                elif "retail" in name_lower or "shop" in name_lower:
+                    b_type = BuildingType.RETAIL
+                    eff_factor = 1.1
+                    schedule = (9, 21)
             
             # Randomize schedule slightly
             if schedule != (0, 24):

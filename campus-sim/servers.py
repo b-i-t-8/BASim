@@ -331,6 +331,9 @@ class BACnetSCHub(ProtocolServer):
         self._thread = None
         self._point_map = []
         
+        if self._engine:
+            self._refresh_point_map()
+        
     def set_engine(self, engine):
         """Set the engine reference (for late binding)."""
         self._engine = engine

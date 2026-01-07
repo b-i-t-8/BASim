@@ -1,0 +1,60 @@
+rules:
+  - type: "Lab"
+    keywords: ["lab", "research", "science", "innovation", "testing", "incubator"]
+    eff_factor: 1.3
+    schedule: [6, 20]
+  
+  - type: "Hospital"
+    keywords: ["hospital", "emergency", "icu", "surgery", "cardiology", "neurology", "cancer"]
+    eff_factor: 1.5
+    schedule: [0, 24]
+  
+  - type: "Hospital"
+    keywords: ["medical", "outpatient", "clinic", "rehabilitation", "wellness"]
+    eff_factor: 1.1
+    schedule: [7, 19]
+  
+  - type: "Data Center"
+    keywords: ["data", "server", "noc", "computing"]
+    eff_factor: 2.5
+    schedule: [0, 24]
+  
+  - type: "Warehouse"
+    keywords: ["warehouse", "storage", "logistics", "maintenance", "plant", "utility", "substation"]
+    eff_factor: 0.5
+    schedule: [6, 16]
+  
+  - type: "Residential"
+    keywords: ["residential", "apartment", "hotel", "dorm", "housing", "guest", "home"]
+    eff_factor: 0.8
+    schedule: [16, 23]
+  
+  - type: "Retail"
+    keywords: ["retail", "shop", "mall", "supermarket", "store"]
+    eff_factor: 1.1
+    schedule: [9, 21]
+  
+  - type: "Office"
+    keywords: ["library", "study", "school", "education", "training"]
+    eff_factor: 0.9
+    schedule: [8, 22]
+  
+  - type: "Retail"
+    keywords: ["sports", "gym", "fitness", "pool", "recreation"]
+    eff_factor: 1.0
+    schedule: [5, 23]
+  
+  - type: "Retail"
+    keywords: ["cafeteria", "restaurant", "dining", "food"]
+    eff_factor: 1.4
+    schedule: [6, 20]
+  
+  - type: "Retail"
+    keywords: ["theater", "cinema", "gallery", "museum", "auditorium"]
+    eff_factor: 1.2
+    schedule: [10, 23]
+  
+  - type: "Office"
+    keywords: ["police", "fire", "security"]
+    eff_factor: 1.0
+    schedule: [0, 24]

@@ -1,162 +1,162 @@
-name: Trane
-manufacturer: Trane
-description: Trane Tracer SC/UC controllers
-naming_convention: camelCase
-protocols:
-- BACnet
+name: Honeywell
+manufacturer: Honeywell
+display_name: Honeywell
+description: Honeywell Spyder/CIPer based controllers
+naming_convention: PascalCase
 device_definitions:
   VAV_CoolingOnly:
     category: VAV
-    controller_model: UC210
+    template: VAV_CoolingOnly
+    controller_model: Spyder5
     description: Cooling Only VAV
     points:
-      spaceTemp:
-        description: Space Temperature
-        address: AV-1
-      activeSetpoint:
-        description: Active Setpoint
-        address: AV-2
-      airflow:
-        description: Airflow
-        address: AV-3
-      damperPosition:
-        description: Damper Position
-        address: AV-4
-      occupancyStatus:
-        description: Occupancy Status
-        address: BV-1
+      EffSetpoint:
+        description: Effective Setpoint
+        address: AV-10
+      OccSchedule:
+        description: Occupancy Schedule
+        address: AV-11
+      SpaceTemp:
+        mapping: room_temp
+        address: AV-12
+      Airflow:
+        mapping: cfm_actual
+        address: AV-13
+      DamperPos:
+        mapping: damper_position
+        address: AV-14
       OccupancyMode:
         description: Occupancy Mode
         writable: true
         value: Occupied
       CoolingSetpoint:
-        description: Cooling Setpoint
-        writable: true
-        value: 74.0
         mapping: cooling_setpoint
-      HeatingSetpoint:
-        description: Heating Setpoint
+        value: 74.0
         writable: true
-        value: 70.0
+      HeatingSetpoint:
         mapping: heating_setpoint
+        value: 70.0
+        writable: true
+
   VAV_Reheat:
     category: VAV
-    controller_model: UC210
+    template: VAV_CoolingOnly
+    controller_model: Spyder5
     description: VAV with Reheat
     points:
-      spaceTemp:
-        description: Space Temperature
-        address: AV-1
-      activeSetpoint:
-        description: Active Setpoint
-        address: AV-2
-      airflow:
-        description: Airflow
-        address: AV-3
-      damperPosition:
-        description: Damper Position
-        address: AV-4
-      dischargeAirTemp:
+      EffSetpoint:
+        description: Effective Setpoint
+        address: AV-10
+      OccSchedule:
+        description: Occupancy Schedule
+        address: AV-11
+      SpaceTemp:
+        mapping: room_temp
+        address: AV-12
+      Airflow:
+        mapping: cfm_actual
+        address: AV-13
+      DamperPos:
+        mapping: damper_position
+        address: AV-14
+      DischargeAirTemp:
         description: Discharge Air Temp
-        address: AV-5
-      reheatValve:
+        address: AV-15
+      ReheatValve:
         description: Reheat Valve
-        address: AV-6
-      occupancyStatus:
-        description: Occupancy Status
-        address: BV-1
+        address: AV-16
       OccupancyMode:
         description: Occupancy Mode
         writable: true
         value: Occupied
       CoolingSetpoint:
-        description: Cooling Setpoint
-        writable: true
-        value: 74.0
         mapping: cooling_setpoint
-      HeatingSetpoint:
-        description: Heating Setpoint
+        value: 74.0
         writable: true
-        value: 70.0
+      HeatingSetpoint:
         mapping: heating_setpoint
+        value: 70.0
+        writable: true
+
   VAV_FanPowered:
     category: VAV
-    controller_model: UC210
+    template: VAV_CoolingOnly
+    controller_model: Spyder5
     description: Fan Powered VAV
     points:
-      spaceTemp:
-        description: Space Temperature
-        address: AV-1
-      activeSetpoint:
-        description: Active Setpoint
-        address: AV-2
-      airflow:
-        description: Airflow
-        address: AV-3
-      damperPosition:
-        description: Damper Position
-        address: AV-4
-      dischargeAirTemp:
+      EffSetpoint:
+        description: Effective Setpoint
+        address: AV-10
+      OccSchedule:
+        description: Occupancy Schedule
+        address: AV-11
+      SpaceTemp:
+        mapping: room_temp
+        address: AV-12
+      Airflow:
+        mapping: cfm_actual
+        address: AV-13
+      DamperPos:
+        mapping: damper_position
+        address: AV-14
+      DischargeAirTemp:
         description: Discharge Air Temp
-        address: AV-5
-      reheatValve:
+        address: AV-15
+      ReheatValve:
         description: Reheat Valve
-        address: AV-6
-      occupancyStatus:
-        description: Occupancy Status
-        address: BV-1
-      fanStatus:
+        address: AV-16
+      FanStatus:
         description: Fan Status
-        address: BV-2
-      fanCommand:
+        address: BV-10
+      FanCmd:
         description: Fan Command
-        address: BV-3
+        address: BV-11
       OccupancyMode:
         description: Occupancy Mode
         writable: true
         value: Occupied
       CoolingSetpoint:
-        description: Cooling Setpoint
-        writable: true
-        value: 74.0
         mapping: cooling_setpoint
-      HeatingSetpoint:
-        description: Heating Setpoint
+        value: 74.0
         writable: true
-        value: 70.0
+      HeatingSetpoint:
         mapping: heating_setpoint
+        value: 70.0
+        writable: true
+
   AHU_VAV:
     category: AHU
-    controller_model: UC600
+    template: AHU_VAV
+    controller_model: CIPer30
     description: VAV Air Handling Unit
     points:
-      supplyAirTemp:
-        description: Supply Air Temperature
-        address: AV-10
-      supplyAirSetpoint:
+      SupplyTemp:
+        mapping: supply_temp
+        address: AV-20
+      SupplySetpt:
         description: Supply Air Setpoint
-        address: AV-11
-      returnAirTemp:
-        description: Return Air Temperature
-        address: AV-12
-      mixedAirTemp:
+        address: AV-21
+      ReturnTemp:
+        mapping: return_temp
+        address: AV-22
+      MixedAirTemp:
         description: Mixed Air Temperature
-        address: AV-13
-      ductStatic:
-        description: Duct Static Pressure
-        address: AV-14
-      ductStaticSetpoint:
+        address: AV-23
+      DuctStatic:
+        mapping: duct_static
+        address: AV-24
+      DuctStaticSetpt:
         description: Static Pressure Setpoint
-        address: AV-15
-      fanSpeed:
-        description: Fan Speed
-        address: AV-16
-      fanStatus:
-        description: Fan Status
-        address: BV-10
-      filterStatus:
+        address: AV-25
+      FanSpeed:
+        mapping: fan_speed
+        address: AV-26
+      FanStatus:
+        mapping: fan_status
+        address: BV-20
+      FilterStatus:
         description: Filter Status
-        address: BV-11
+        address: BV-21
       SupplyTempSetpoint:
         description: Supply Temp Setpoint
         writable: true
@@ -166,33 +166,33 @@ device_definitions:
         description: Static Pressure Setpoint
         writable: true
         value: 1.5
-        mapping: static_pressure_setpoint
+        mapping: static_setpoint
   AHU_CAV:
     category: AHU
-    controller_model: UC600
+    controller_model: CIPer30
     description: Constant Air Volume AHU
     points:
-      supplyAirTemp:
+      SupplyTemp:
         description: Supply Air Temperature
-        address: AV-10
-      supplyAirSetpoint:
+        address: AV-20
+      SupplySetpt:
         description: Supply Air Setpoint
-        address: AV-11
-      returnAirTemp:
+        address: AV-21
+      ReturnTemp:
         description: Return Air Temperature
-        address: AV-12
-      fanStatus:
+        address: AV-22
+      FanStatus:
         description: Fan Status
-        address: BV-10
-      fanCommand:
+        address: BV-20
+      FanCmd:
         description: Fan Command
-        address: BV-12
-      coolStage1:
+        address: BV-22
+      CoolStage1:
         description: Cooling Stage 1
-        address: BV-13
-      heatStage1:
+        address: BV-23
+      HeatStage1:
         description: Heating Stage 1
-        address: BV-14
+        address: BV-24
       SupplyTempSetpoint:
         description: Supply Temp Setpoint
         writable: true
@@ -200,73 +200,73 @@ device_definitions:
         mapping: supply_temp_setpoint
   ChillerPlant:
     category: Plant
-    controller_model: UC600
+    controller_model: CIPer30
     description: Chiller Plant Controller
     points:
-      systemSupplyTemp:
+      SystemSupplyTemp:
         description: System Supply Temp
         address: AV-100
-      systemReturnTemp:
+      SystemReturnTemp:
         description: System Return Temp
         address: AV-101
-      systemFlow:
+      SystemFlow:
         description: System Flow
         address: AV-102
-      systemPressure:
+      SystemPressure:
         description: System Pressure
         address: AV-103
-      systemPressureSetpt:
+      SystemPressureSetpt:
         description: System Pressure Setpoint
         address: AV-104
-      plantEnable:
+      PlantEnable:
         description: Plant Enable
         address: BV-100
-      chiller1Enable:
+      Chiller1Enable:
         description: Chiller 1 Enable
         address: BV-101
-      chiller2Enable:
+      Chiller2Enable:
         description: Chiller 2 Enable
         address: BV-102
   BoilerPlant:
     category: Plant
-    controller_model: UC600
+    controller_model: CIPer30
     description: Boiler Plant Controller
     points:
-      systemSupplyTemp:
+      SystemSupplyTemp:
         description: System Supply Temp
         address: AV-200
-      systemReturnTemp:
+      SystemReturnTemp:
         description: System Return Temp
         address: AV-201
-      systemFlow:
+      SystemFlow:
         description: System Flow
         address: AV-202
-      plantEnable:
+      PlantEnable:
         description: Plant Enable
         address: BV-200
-      boiler1Enable:
+      Boiler1Enable:
         description: Boiler 1 Enable
         address: BV-201
-      boiler2Enable:
+      Boiler2Enable:
         description: Boiler 2 Enable
         address: BV-202
   FCU:
     category: FCU
-    controller_model: UC210
+    controller_model: Spyder5
     description: Fan Coil Unit
     points:
-      spaceTemp:
-        description: Space Temperature
-        address: AV-20
-      activeSetpoint:
-        description: Active Setpoint
-        address: AV-21
-      fanStatus:
+      RoomTemp:
+        description: Room Temperature
+        address: AV-30
+      EffSetpoint:
+        description: Effective Setpoint
+        address: AV-31
+      FanStatus:
         description: Fan Status
         address: BV-10
-      valvePosition:
+      ValvePos:
         description: Valve Position
-        address: AV-22
+        address: AV-32
       CoolingSetpoint:
         description: Cooling Setpoint
         writable: true
@@ -279,19 +279,19 @@ device_definitions:
         mapping: heating_setpoint
   RTU:
     category: RTU
-    controller_model: UC600
-    description: Roof Top Unit
+    controller_model: CIPer30
+    description: Rooftop Unit
     points:
-      supplyAirTemp:
+      SupplyTemp:
         description: Supply Air Temperature
-        address: AV-30
-      returnAirTemp:
+        address: AV-40
+      ReturnTemp:
         description: Return Air Temperature
-        address: AV-31
-      fanCommand:
+        address: AV-41
+      FanCmd:
         description: Fan Command
         address: BV-20
-      coolStage1:
+      CoolStage1:
         description: Cooling Stage 1
         address: BV-21
       SupplyTempSetpoint:
@@ -301,8 +301,8 @@ device_definitions:
         mapping: supply_temp_setpoint
   Gateway:
     category: Gateway
-    controller_model: TracerSC
-    description: "Network Gateway"
+    controller_model: WEB-8000
+    description: JACE 8000 Gateway
     protocol: "BACnet IP"
     ports:
       - name: "IP_Interface"
@@ -315,3 +315,10 @@ device_definitions:
         baud_rate: 38400
         mac_address: 1
         max_master: 127
+        max_info_frames: 1
+    points:
+      Device_Status:
+        description: "Device Status"
+        writable: false
+        value: 1
+        address: AV-100

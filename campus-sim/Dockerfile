@@ -51,6 +51,7 @@ ENV CAMPUS_SIZE="Small"
 ENV GEO_LAT="36.16"
 ENV SIMULATION_SPEED="1.0"
 ENV PYTHONUNBUFFERED=1
+ENV RUNNING_IN_DOCKER=true
 # Caddy data directories for certificate persistence
 ENV XDG_DATA_HOME=/data
 ENV XDG_CONFIG_HOME=/config

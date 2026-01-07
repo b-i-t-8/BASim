@@ -1,0 +1,21 @@
+manufacturer: Schneider
+display_name: Schneider Electric
+models:
+  MP-V:
+    description: SpaceLogic MP-V Controller
+    inputs: 6
+    outputs: 4
+    input_types: [Universal Input]
+    output_types: [Universal Output, Triac]
+  MP-C:
+    description: SpaceLogic MP-C Controller
+    inputs: 16
+    outputs: 12
+    input_types: [Universal Input]
+    output_types: [Universal Output]
+  AS-P:
+    description: Automation Server
+    inputs: 0
+    outputs: 0
+    input_types: []
+    output_types: []

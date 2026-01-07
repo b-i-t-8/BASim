@@ -1,0 +1,21 @@
+manufacturer: Distech
+display_name: Distech Controls
+models:
+  ECY-VAV:
+    description: Eclypse Connected VAV Controller
+    inputs: 4
+    outputs: 4
+    input_types: [Universal Input, Airflow Sensor]
+    output_types: [Triac, 0-10V]
+  ECY-PTU:
+    description: Eclypse Connected PTU Controller
+    inputs: 8
+    outputs: 6
+    input_types: [Universal Input]
+    output_types: [Universal Output, Digital Output]
+  ECY-S1000:
+    description: Eclypse Connected System Controller
+    inputs: 20
+    outputs: 16
+    input_types: [Universal Input]
+    output_types: [Universal Output]

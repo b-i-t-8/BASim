@@ -1,0 +1,8 @@
+templates:
+  Test:
+    points:
+    - name: Point1
+      type: AI
+      unit: degF
+    tags:
+      equip: true

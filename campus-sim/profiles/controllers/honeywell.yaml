@@ -1,14 +1,21 @@
 manufacturer: Honeywell
+display_name: Honeywell
 models:
   Spyder5:
     description: Spyder 5 VAV Controller
     inputs: 6
     outputs: 4
+    input_types: [Universal Input]
+    output_types: [Digital Output, Analog Output]
   CIPer30:
     description: CIPer Model 30 Controller
     inputs: 12
     outputs: 10
+    input_types: [Universal Input]
+    output_types: [Universal Output]
   WEB-8000:
     description: WEB-8000 Controller
     inputs: 0
     outputs: 0
+    input_types: []
+    output_types: []

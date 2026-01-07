@@ -133,7 +133,7 @@ class ModbusRegistrar(ProtocolRegistrar):
 
         # === DATA CENTER (Industrial) ===
         dc = eng.data_center
-        if dc and dc.enabled:
+        if dc:
             server.register_point("DataCenter_TotalLoad_kW", dc.total_it_load_kw)
             server.register_point("DataCenter_PUE", dc.pue)
             
@@ -147,9 +147,9 @@ class ModbusRegistrar(ProtocolRegistrar):
 
         # === WASTEWATER (Industrial) ===
         ww = eng.wastewater_facility
-        if ww and ww.enabled:
-            server.register_point("Wastewater_InfluentFlow", ww.influent_flow_mgd)
-            server.register_point("Wastewater_EffluentFlow", ww.effluent_flow_mgd)
+        if ww:
+            server.register_point("Wastewater_Influent_MGD", ww.influent_flow_mgd)
+            server.register_point("Wastewater_Effluent_MGD", ww.effluent_flow_mgd)
             server.register_point("Wastewater_DO", ww.dissolved_oxygen_mg_l)
             
             for blower in ww.blowers:

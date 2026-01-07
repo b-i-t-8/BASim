@@ -1,160 +1,146 @@
-name: Schneider
-manufacturer: Schneider Electric
-description: Schneider Electric EcoStruxure / SmartX
+name: Alerton
+manufacturer: Alerton
+display_name: Alerton
+description: Alerton Compass/Ascent based controllers
 naming_convention: PascalCase
+protocols:
+- BACnet
+- Modbus
 device_definitions:
   VAV_CoolingOnly:
     category: VAV
-    controller_model: MP-V
+    template: VAV_CoolingOnly
+    controller_model: VAV-SD
     description: Cooling Only VAV
     points:
-      RoomTemp:
-        description: Room Temperature
+      OccupancyMode:
+        description: Occupancy Mode Enum
         address: AV-1
       EffectiveSetpoint:
         description: Effective Setpoint
         address: AV-2
-      Airflow:
-        description: Airflow
-        address: AV-3
-      DamperPos:
-        description: Damper Position
-        address: AV-4
-      OccupancyCmd:
-        description: Occupancy Command
-        address: BV-1
-      OccupancyMode:
-        description: Occupancy Mode
-        writable: true
-        value: Occupied
-      CoolingSetpoint:
-        description: Cooling Setpoint
-        writable: true
-        value: 74.0
-        mapping: cooling_setpoint
-      HeatingSetpoint:
-        description: Heating Setpoint
-        writable: true
-        value: 70.0
-        mapping: heating_setpoint
-  VAV_Reheat:
-    category: VAV
-    controller_model: MP-V
-    description: VAV with Reheat
-    points:
       RoomTemp:
-        description: Room Temperature
-        address: AV-1
-      EffectiveSetpoint:
-        description: Effective Setpoint
-        address: AV-2
-      Airflow:
-        description: Airflow
+        mapping: room_temp
         address: AV-3
-      DamperPos:
-        description: Damper Position
+      AirflowSetpt:
+        description: Airflow Setpoint
         address: AV-4
-      DischargeAirTemp:
-        description: Discharge Air Temp
-        address: AV-5
-      ReheatValve:
-        description: Reheat Valve
-        address: AV-6
-      OccupancyCmd:
-        description: Occupancy Command
-        address: BV-1
-      OccupancyMode:
-        description: Occupancy Mode
-        writable: true
-        value: Occupied
       CoolingSetpoint:
-        description: Cooling Setpoint
-        writable: true
-        value: 74.0
         mapping: cooling_setpoint
-      HeatingSetpoint:
-        description: Heating Setpoint
+        value: 74.0
         writable: true
-        value: 70.0
+      HeatingSetpoint:
         mapping: heating_setpoint
+        value: 70.0
+        writable: true
+
   VAV_FanPowered:
     category: VAV
-    controller_model: MP-V
+    template: VAV_CoolingOnly
+    controller_model: VAV-SD
     description: Fan Powered VAV
     points:
-      RoomTemp:
-        description: Room Temperature
+      OccupancyMode:
+        description: Occupancy Mode Enum
         address: AV-1
       EffectiveSetpoint:
         description: Effective Setpoint
         address: AV-2
-      Airflow:
-        description: Airflow
+      RoomTemp:
+        mapping: room_temp
         address: AV-3
-      DamperPos:
-        description: Damper Position
+      AirflowSetpt:
+        description: Airflow Setpoint
         address: AV-4
       DischargeAirTemp:
-        description: Discharge Air Temp
+        description: Discharge Air Temperature
         address: AV-5
       ReheatValve:
-        description: Reheat Valve
+        description: Reheat Valve Position
         address: AV-6
-      OccupancyCmd:
-        description: Occupancy Command
-        address: BV-1
       FanStatus:
         description: Fan Status
-        address: BV-2
+        address: BV-1
       FanCmd:
         description: Fan Command
-        address: BV-3
-      OccupancyMode:
-        description: Occupancy Mode
-        writable: true
-        value: Occupied
+        address: BV-2
       CoolingSetpoint:
-        description: Cooling Setpoint
-        writable: true
-        value: 74.0
         mapping: cooling_setpoint
-      HeatingSetpoint:
-        description: Heating Setpoint
+        value: 74.0
         writable: true
-        value: 70.0
+      HeatingSetpoint:
         mapping: heating_setpoint
+        value: 70.0
+        writable: true
+
+  VAV_Reheat:
+    category: VAV
+    template: VAV_CoolingOnly
+    controller_model: VAV-SD
+    description: VAV with Reheat
+    points:
+      OccupancyMode:
+        description: Occupancy Mode Enum
+        address: AV-1
+      EffectiveSetpoint:
+        description: Effective Setpoint
+        address: AV-2
+      RoomTemp:
+        mapping: room_temp
+        address: AV-3
+      AirflowSetpt:
+        description: Airflow Setpoint
+        address: AV-4
+      DischargeAirTemp:
+        description: Discharge Air Temperature
+        address: AV-5
+      ReheatValve:
+        description: Reheat Valve Position
+        address: AV-6
+      CoolingSetpoint:
+        mapping: cooling_setpoint
+        value: 74.0
+        writable: true
+      HeatingSetpoint:
+        mapping: heating_setpoint
+        value: 70.0
+        writable: true
   AHU_VAV:
     category: AHU
-    controller_model: MP-C
+    template: AHU_VAV
+    controller_model: VLC-1188
     description: VAV Air Handling Unit
     points:
       SupplyTemp:
-        description: Supply Air Temperature
         address: AV-10
-      SupplySetpoint:
-        description: Supply Air Setpoint
+        mapping: supply_temp
+      SupplyTempSetpt:
         address: AV-11
+        type: AI
+        description: Supply Air Temperature Setpoint
       ReturnTemp:
-        description: Return Air Temperature
         address: AV-12
+        mapping: return_temp
       MixedAirTemp:
-        description: Mixed Air Temperature
         address: AV-13
+        type: AI
+        description: Mixed Air Temperature
       DuctStatic:
-        description: Duct Static Pressure
         address: AV-14
+        mapping: duct_static
       DuctStaticSetpt:
-        description: Static Pressure Setpoint
         address: AV-15
+        mapping: static_setpoint
       FanSpeed:
-        description: Fan Speed
         address: AV-16
+        mapping: fan_speed
       FanStatus:
-        description: Fan Status
         address: BV-10
+        mapping: fan_status
       FilterStatus:
-        description: Filter Status
         address: BV-11
+        type: BI
+        description: Filter Status
       SupplyTempSetpoint:
         description: Supply Temp Setpoint
         writable: true
@@ -164,33 +150,40 @@ device_definitions:
         description: Static Pressure Setpoint
         writable: true
         value: 1.5
-        mapping: static_pressure_setpoint
+        mapping: static_setpoint
   AHU_CAV:
     category: AHU
-    controller_model: MP-C
+    controller_model: VLC-1188
     description: Constant Air Volume AHU
     points:
       SupplyTemp:
-        description: Supply Air Temperature
         address: AV-10
-      SupplySetpoint:
-        description: Supply Air Setpoint
+        type: AI
+        description: Supply Air Temperature
+      SupplyTempSetpt:
         address: AV-11
+        type: AI
+        description: Supply Air Temperature Setpoint
       ReturnTemp:
-        description: Return Air Temperature
         address: AV-12
+        type: AI
+        description: Return Air Temperature
       FanStatus:
-        description: Fan Status
         address: BV-10
+        type: BI
+        description: Supply Fan Status
       FanCmd:
-        description: Fan Command
         address: BV-12
+        type: BO
+        description: Supply Fan Command
       CoolStage1:
-        description: Cooling Stage 1
         address: BV-13
+        type: BO
+        description: Cooling Stage 1
       HeatStage1:
-        description: Heating Stage 1
         address: BV-14
+        type: BO
+        description: Heating Stage 1
       SupplyTempSetpoint:
         description: Supply Temp Setpoint
         writable: true
@@ -198,7 +191,7 @@ device_definitions:
         mapping: supply_temp_setpoint
   ChillerPlant:
     category: Plant
-    controller_model: MP-C
+    controller_model: VLC-1188
     description: Chiller Plant Controller
     points:
       SystemSupplyTemp:
@@ -227,7 +220,7 @@ device_definitions:
         address: BV-102
   BoilerPlant:
     category: Plant
-    controller_model: MP-C
+    controller_model: VLC-1188
     description: Boiler Plant Controller
     points:
       SystemSupplyTemp:
@@ -250,14 +243,17 @@ device_definitions:
         address: BV-202
   FCU:
     category: FCU
-    controller_model: MP-V
+    controller_model: VAV-SD
     description: Fan Coil Unit
+    defaults:
+      cooling_setpoint: 74.0
+      heating_setpoint: 70.0
     points:
       RoomTemp:
         description: Room Temperature
         address: AV-20
-      EffectiveSetpoint:
-        description: Effective Setpoint
+      RoomSetpoint:
+        description: Room Setpoint
         address: AV-21
       FanStatus:
         description: Fan Status
@@ -265,20 +261,12 @@ device_definitions:
       ValveCmd:
         description: Valve Command
         address: AV-22
-      CoolingSetpoint:
-        description: Cooling Setpoint
-        writable: true
-        value: 74.0
-        mapping: cooling_setpoint
-      HeatingSetpoint:
-        description: Heating Setpoint
-        writable: true
-        value: 70.0
-        mapping: heating_setpoint
   RTU:
     category: RTU
-    controller_model: MP-C
+    controller_model: VLC-1188
     description: Roof Top Unit
+    defaults:
+      supply_temp_setpoint: 55.0
     points:
       SupplyTemp:
         description: Supply Air Temperature
@@ -292,14 +280,9 @@ device_definitions:
       CoolStage1:
         description: Cooling Stage 1
         address: BV-21
-      SupplyTempSetpoint:
-        description: Supply Temp Setpoint
-        writable: true
-        value: 55.0
-        mapping: supply_temp_setpoint
   Gateway:
     category: Gateway
-    controller_model: AS-P
+    controller_model: ACM
     description: "Network Gateway"
     protocol: "BACnet IP"
     ports:

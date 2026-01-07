@@ -1,0 +1,21 @@
+manufacturer: JCI
+display_name: Johnson Controls
+models:
+  FEC2611:
+    description: Field Equipment Controller - VAV
+    inputs: 6
+    outputs: 5
+    input_types: [Universal Input, Differential Pressure]
+    output_types: [Binary Output, Configurable Output]
+  FAC2511:
+    description: Advanced Application Field Equipment Controller
+    inputs: 18
+    outputs: 12
+    input_types: [Universal Input]
+    output_types: [Binary Output, Configurable Output]
+  NAE55:
+    description: Network Automation Engine
+    inputs: 0
+    outputs: 0
+    input_types: []
+    output_types: []

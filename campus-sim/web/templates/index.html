@@ -113,12 +113,39 @@
             </div>
 
         <main>
-            <nav class="building-nav" id="building-nav">
-                <!-- Building tabs populated by JS -->
+            <nav class="view-nav" id="view-nav">
+                <!-- Tabs populated by JS -->
             </nav>
 
-            <section class="building-content" id="building-content">
-                <p class="loading">Loading...</p>
+            <!-- Dashboard Overview (Hidden by default) -->
+            <section class="dashboard-view" id="dashboard-view" style="display: none;">
+                <div class="kpi-grid">
+                    <div class="kpi-card hot-spots">
+                        <h3>🔥 Hot Spots (>76°F)</h3>
+                        <div class="kpi-value" id="kpi-hot-count">--</div>
+                        <ul class="kpi-list" id="kpi-hot-list"></ul>
+                    </div>
+                    <div class="kpi-card cold-spots">
+                        <h3>❄️ Cold Spots (<70°F)</h3>
+                        <div class="kpi-value" id="kpi-cold-count">--</div>
+                        <ul class="kpi-list" id="kpi-cold-list"></ul>
+                    </div>
+                    <div class="kpi-card comfort">
+                        <h3>😊 Comfort Index</h3>
+                        <div class="kpi-value" id="kpi-comfort-score">--%</div>
+                        <div class="kpi-sub">Avg Temp: <span id="kpi-avg-temp">--</span>°F</div>
+                    </div>
+                    <div class="kpi-card energy">
+                        <h3>⚡ Plant Load</h3>
+                        <div class="kpi-value" id="kpi-plant-load">--</div>
+                        <div class="kpi-sub">tons</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Building/Facility Content -->
+            <section class="content-view" id="content-view">
+                <p class="loading">Select a view...</p>
             </section>
         </main>
     </div>
